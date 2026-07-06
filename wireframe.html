@@ -1,0 +1,285 @@
+<meta charset="utf-8">
+<title>화면 설계 명세 — 수율 대시보드 × AI 원인분석 (와이어프레임·유저플로우)</title>
+<style>
+ :root{--bg:#ecef3;--ground:#eaedf1;--panel:#fff;--ink:#17202e;--muted:#59677a;--faint:#8a97a7;--hair:#dde2e9;--line2:#c6ceda;
+   --accent:#1f6feb;--accent-d:#1653b8;--accent-s:#e9f1fd;--good:#1f9d57;--good-s:#e6f6ec;--warn:#cf8a2e;--warn-s:#fbf2df;--crit:#d14a45;--crit-s:#fbe9e8;
+   --wire:#aeb8c6;--wirefill:#eef1f5;--wirefill2:#e2e7ee;
+   --mono:"Cascadia Code","Consolas",ui-monospace,monospace;--sans:"Segoe UI Variable","Segoe UI","Malgun Gothic",system-ui,sans-serif;}
+ *{box-sizing:border-box;margin:0;padding:0}
+ body{background:var(--ground);color:var(--ink);font-family:var(--sans);line-height:1.55;font-size:14.5px}
+ .page{max-width:1080px;margin:0 auto;padding:38px 22px 76px}
+ .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700}
+ h1{font-size:28px;font-weight:800;letter-spacing:-.015em;margin:.32em 0 .2em;text-wrap:balance}
+ .sub0{color:var(--muted);font-size:14px}.sub0 b{color:var(--ink)}
+ h2{font-size:20px;font-weight:800;margin:44px 0 6px;display:flex;align-items:center;gap:11px;letter-spacing:-.01em}
+ h2 .b{font-family:var(--mono);font-size:12px;font-weight:800;color:#fff;background:var(--ink);border-radius:7px;padding:4px 11px}
+ h2.s1 .b{background:var(--accent)} h2.s2 .b{background:var(--crit)} h2.flow .b{background:var(--good)}
+ .sub{color:var(--muted);font-size:13.5px;margin:2px 0 16px;max-width:82ch}
+ /* 와이어프레임 캔버스 */
+ .wfwrap{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;align-items:start;margin-top:10px}
+ .wf{background:#f3f5f8;border:1.5px solid var(--line2);border-radius:12px;padding:12px;box-shadow:2px 3px 0 rgba(0,0,0,.03)}
+ .wf .wtitle{font-family:var(--mono);font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.05em;padding:2px 4px 10px;border-bottom:1px dashed var(--wire);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+ .wbox{background:#fff;border:1.4px dashed var(--wire);border-radius:8px;padding:10px 12px;position:relative}
+ .wbox+.wbox{margin-top:9px}
+ .wl{font-size:11.5px;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:7px}
+ .wl .mini{font-family:var(--mono);font-size:9.5px;color:var(--faint);font-weight:500}
+ html{scroll-behavior:smooth}
+ .ph{background:#d3dae4;border-radius:4px;height:9px;margin-top:7px} .ph.s{width:60%} .ph.xs{width:35%}
+ .pbar{display:grid;grid-template-columns:52px 1fr;gap:6px;align-items:center;margin-top:5px} .pbar .pl{font-size:9px;font-family:var(--mono);color:var(--muted);text-align:right;white-space:nowrap} .pbar .pt{background:var(--wirefill);border:1px solid var(--wire);border-radius:3px;height:10px;overflow:hidden} .pbar .pt i{display:block;height:100%;background:#8ea0b6}
+ .ilhead{font-size:10.5px;font-family:var(--mono);color:var(--faint);text-transform:uppercase;letter-spacing:.05em;padding:9px 13px 5px;border-bottom:1px solid var(--hair);font-weight:700}
+ .wrow{display:grid;gap:8px} .wrow.k4{grid-template-columns:repeat(4,1fr)} .wrow.k2{grid-template-columns:1fr 1fr} .wrow.a{grid-template-columns:1.7fr 1fr}
+ .kbox{background:#fff;border:1.4px dashed var(--wire);border-radius:7px;padding:8px 9px;text-align:center} .kbox .kv{font-weight:800;font-size:15px;color:#42506180} .kbox .kk{font-size:9.5px;color:var(--faint);font-family:var(--mono)}
+ .chartbox{height:74px;background:repeating-linear-gradient(0deg,#fff,#fff 15px,#f4f6f9 15px,#f4f6f9 16px);border:1.4px dashed var(--wire);border-radius:7px;position:relative;overflow:hidden}
+ .chartbox svg{position:absolute;inset:0;width:100%;height:100%}
+ .heatbox{display:grid;grid-template-columns:repeat(8,1fr);gap:2px} .heatbox i{aspect-ratio:1;border-radius:1px;background:var(--wirefill2)} .heatbox i.h{background:#c9b0b0} .heatbox i.hh{background:#c98a8a}
+ .tbox{width:100%;border-collapse:collapse;font-size:10.5px} .tbox td,.tbox th{border:1px dashed var(--wire);padding:4px 6px;text-align:left;color:var(--muted)} .tbox th{background:var(--wirefill);font-family:var(--mono);font-size:9px;text-transform:uppercase}
+ .cta{display:inline-block;font-size:10px;font-weight:800;color:#fff;background:var(--accent);border-radius:5px;padding:3px 8px;cursor:pointer;text-decoration:none} .cta:hover{background:var(--accent-d)}
+ .minichip{font-size:9px;font-family:var(--mono);background:#e3ece4;color:#4a6a55;border-radius:4px;padding:2px 6px}
+ .legend{display:flex;flex-wrap:wrap;gap:18px;margin-top:14px;padding:11px 15px;background:var(--panel);border:1px solid var(--hair);border-radius:10px;font-size:12px;color:var(--muted)} .legend b{color:var(--ink)} .legend span{display:inline-flex;align-items:center;gap:6px}
+ @keyframes wfflash{0%,100%{background:transparent}22%{background:var(--warn-s)}} h2.flash{border-radius:8px;animation:wfflash 1.5s ease}
+ @media(prefers-reduced-motion:reduce){h2.flash{animation:none}}
+ .flowmini{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;padding:12px 15px;background:var(--panel);border:1px solid var(--hair);border-radius:11px}
+ .flowmini .fm{display:flex;flex-direction:column;border-radius:9px;padding:8px 13px;font-weight:800;font-size:13px;line-height:1.2} .flowmini .fm small{font-weight:500;font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+ .flowmini .fm.a{background:var(--accent-s);color:var(--accent)} .flowmini .fm.b{background:var(--crit-s);color:var(--crit)} .flowmini .fm.c{background:var(--good-s);color:var(--good)}
+ .flowmini .fmar{font-family:var(--mono);font-size:11px;color:var(--faint);font-weight:700}
+ .abtn{font-size:9px;font-family:var(--mono);border:1px solid var(--line2);border-radius:5px;padding:3px 7px;color:var(--muted)} .abtn.ok{border-color:#bcd0c4;background:var(--good-s);color:var(--good);font-weight:700} .abtn.no{border-color:#e6c3c1;color:var(--crit)}
+ .pin{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;background:var(--accent);color:#fff;font-size:10.5px;font-weight:800;font-family:var(--mono);flex:none}
+ .pin.c{background:var(--crit)} .pin.g{background:var(--good)}
+ .pinabs{position:absolute;top:-9px;left:-9px}
+ .infolist{background:var(--panel);border:1px solid var(--hair);border-radius:12px;padding:6px 4px}
+ .info{display:flex;gap:11px;padding:11px 13px;border-bottom:1px solid var(--hair)} .info:last-child{border:none}
+ .info .tx{flex:1} .info .tt{font-weight:800;font-size:12.5px} .info .td{font-size:11.5px;color:var(--muted);margin-top:2px} .info .src{font-family:var(--mono);font-size:10px;color:var(--accent);margin-top:3px}
+ /* 유저플로우 */
+ .flowcanvas{background:var(--panel);border:1px solid var(--hair);border-radius:14px;padding:20px;margin-top:12px}
+ .flowscreens{display:flex;align-items:stretch;gap:0;flex-wrap:wrap}
+ .fscreen{flex:1;min-width:210px;border:1.5px solid var(--accent);border-radius:11px;padding:13px 15px;background:var(--accent-s)}
+ .fscreen.s2{border-color:var(--crit);background:var(--crit-s)}
+ .fscreen .fn{font-family:var(--mono);font-size:10px;font-weight:800;color:var(--accent)} .fscreen.s2 .fn{color:var(--crit)}
+ .fscreen .ft{font-weight:800;font-size:14px;margin:3px 0 5px} .fscreen .fl{font-size:11.5px;color:#3a4757;line-height:1.5}
+ .fconnect{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 12px;min-width:150px}
+ .fconnect .trig{font-size:11px;font-family:var(--mono);color:var(--crit);background:var(--crit-s);border:1px solid #eecbc9;border-radius:20px;padding:4px 11px;text-align:center;font-weight:700}
+ .fconnect .arw{font-size:24px;color:var(--faint);margin:6px 0}
+ .fconnect .back{font-size:10px;color:var(--faint);font-family:var(--mono)}
+ .steps{display:grid;grid-template-columns:1fr;gap:0;margin-top:18px;counter-reset:st}
+ .step{display:flex;gap:13px;align-items:flex-start;padding:9px 0;border-bottom:1px dashed var(--hair)} .step:last-child{border:none}
+ .step .n{counter-increment:st;width:24px;height:24px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;font-weight:800;font-family:var(--mono);display:flex;align-items:center;justify-content:center;flex:none} .step .n::before{content:counter(st)}
+ .step.h .n{background:var(--crit)} .step .st2{font-weight:700;font-size:13px} .step .sd{font-size:12px;color:var(--muted)}
+ .step .scr{font-size:10px;font-family:var(--mono);font-weight:700;border-radius:5px;padding:2px 7px;flex:none;margin-top:1px} .scr.a{background:var(--accent-s);color:var(--accent)} .scr.b{background:var(--crit-s);color:var(--crit)}
+ /* 참고자료 토글 */
+ .reftoggle{background:var(--panel);border:1px solid var(--hair);border-radius:12px;margin-top:30px;overflow:hidden}
+ .reftoggle>summary{cursor:pointer;padding:15px 18px;font-weight:800;font-size:14px;list-style:none;display:flex;align-items:center;gap:10px;user-select:none}
+ .reftoggle>summary::-webkit-details-marker{display:none}
+ .reftoggle>summary::before{content:"▸";color:var(--accent);font-size:12px;transition:.15s} .reftoggle[open]>summary::before{content:"▾"}
+ .reftoggle>summary .cnt{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--faint);font-weight:600}
+ .reftoggle .rbody{padding:0 18px 18px;border-top:1px solid var(--hair)}
+ .refgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0 4px}
+ .refcard{background:#f7f9fb;border:1px solid var(--hair);border-radius:11px;padding:13px 15px}
+ .refcard .rh{font-weight:800;font-size:12.5px;margin-bottom:7px;display:flex;align-items:center;gap:7px}
+ .refcard ul{margin:0;padding-left:2px;list-style:none} .refcard li{font-size:12px;padding:5px 0;border-bottom:1px solid var(--hair);line-height:1.45} .refcard li:last-child{border:none}
+ .refcard li b{color:var(--ink)} .refcard a{color:var(--accent);text-decoration:none;font-family:var(--mono);font-size:10.5px;word-break:break-all} .refcard a:hover{text-decoration:underline}
+ .rtable{width:100%;border-collapse:collapse;font-size:12.5px;background:var(--panel);border:1px solid var(--hair);border-radius:11px;overflow:hidden;margin-top:14px}
+ .rtable th,.rtable td{border-bottom:1px solid var(--hair);padding:8px 11px;text-align:left;vertical-align:top} .rtable th{background:#f3f6fa;font-size:10.5px;text-transform:uppercase;color:var(--muted);font-family:var(--mono)}
+ .rtable td.n{font-weight:800;white-space:nowrap} .rtable a{color:var(--accent);font-family:var(--mono);font-size:10.5px;word-break:break-all;text-decoration:none} .rtable a:hover{text-decoration:underline} .rtable tr:last-child td{border:none}
+ .foot{margin-top:40px;padding-top:18px;border-top:1px solid var(--hair);color:var(--faint);font-size:12px}
+ @media(max-width:820px){.wfwrap,.refgrid{grid-template-columns:1fr}.wrow.k4{grid-template-columns:repeat(2,1fr)}.flowscreens{flex-direction:column}.fconnect .arw{transform:rotate(90deg)}}
+</style>
+
+<div class="page">
+  <div class="eyebrow">화면 설계 명세 · 와이어프레임 + 유저플로우</div>
+  <h1>수율 모니터링 대시보드 × AI 에이전트 원인분석</h1>
+  <p class="sub0"><b>화면 1</b> 수율 모니터링 대시보드 &nbsp;→&nbsp; <b>화면 2</b> AI 에이전트 원인분석 &amp; 제안</p>
+  <div class="legend"><span>⬚ <b>점선 박스</b> = 화면 UI 요소 자리</span><span>① <b>번호</b> = 오른쪽 "표시 정보" 설명과 매칭</span><span><span class="cta" style="padding:1px 6px;cursor:default">AI ▶</span> = 이 표식(화면 1의 이상 Lot 표에 있음) = 화면 1→2 전환 버튼</span></div>
+
+  <!-- (b) 상단 플로우 개요 -->
+  <div class="flowmini"><span class="fm a">📊 화면 1 · 대시보드<small>이상 감지</small></span><span class="fmar">—[AI ▶]→</span><span class="fm b">🧠 화면 2 · AI 원인분석<small>규명 · 근거</small></span><span class="fmar">→</span><span class="fm c">🛠 조치 · 승인<small>HITL</small></span></div>
+
+  <!-- ===== 화면 1 ===== -->
+  <h2 class="s1"><span class="b">화면 1</span> 수율 모니터링 대시보드 <span style="font-size:13px;font-weight:600;color:var(--muted)">— 무엇이 잘못됐나 감지</span></h2>
+  <p class="sub">현재 수율 이상을 한눈에 확인하고, 문제 Lot–Wafer를 짚어 AI 분석으로 진입시키는 관제 화면.</p>
+  <div class="wfwrap">
+    <div class="wf">
+      <div class="wtitle">🖥 WIREFRAME · 화면1 수율 대시보드</div>
+      <div class="wbox"><div class="wl">🔎 필터바 <span class="mini">기간 · 라인 · 공정 · 🔔알람</span></div></div>
+      <div class="wbox"><span class="pin pinabs">1</span><div class="wl">KPI 카드 <span class="mini">4종</span></div>
+        <div class="wrow k4" style="margin-top:8px">
+          <div class="kbox"><div class="kv">92.3%</div><div class="kk">Die 수율</div></div>
+          <div class="kbox"><div class="kv">90.1%</div><div class="kk">EDS bin</div></div>
+          <div class="kbox"><div class="kv">3</div><div class="kk">이상 Lot</div></div>
+          <div class="kbox"><div class="kv">E-Ring</div><div class="kk">주 결함</div></div>
+        </div>
+      </div>
+      <div class="wrow a" style="margin-top:9px">
+        <div class="wbox"><span class="pin pinabs">2</span><div class="wl">📈 수율 추이 <span class="mini">이상구간 자동표시</span></div>
+          <div class="chartbox" style="margin-top:7px"><svg viewBox="0 0 300 74" preserveAspectRatio="none"><rect x="210" y="0" width="90" height="74" fill="#d14a45" opacity="0.08"/><polyline fill="none" stroke="#1f6feb" stroke-width="1.6" points="6,22 40,20 80,24 120,21 160,23 200,26 220,40 250,56 290,58"/></svg></div>
+        </div>
+        <div class="wbox"><span class="pin pinabs">3</span><div class="wl">🧱 결함 파레토 <span class="mini">빈도순</span></div>
+          <div class="pbar"><span class="pl">Edge-Ring</span><div class="pt"><i style="width:100%"></i></div></div>
+          <div class="pbar"><span class="pl">Edge-Loc</span><div class="pt"><i style="width:64%"></i></div></div>
+          <div class="pbar"><span class="pl">Center</span><div class="pt"><i style="width:44%"></i></div></div>
+          <div class="pbar"><span class="pl">Loc</span><div class="pt"><i style="width:37%"></i></div></div>
+          <div class="pbar"><span class="pl">기타</span><div class="pt"><i style="width:20%"></i></div></div>
+        </div>
+      </div>
+      <div class="wbox"><span class="pin pinabs">4</span><div class="wl">🗺 웨이퍼맵 <span class="mini">defect-overlay · density hotspot</span></div>
+        <div class="heatbox" style="margin-top:8px">
+          <i></i><i></i><i class="h"></i><i class="hh"></i><i class="hh"></i><i class="h"></i><i></i><i></i>
+          <i></i><i class="h"></i><i class="hh"></i><i></i><i></i><i class="hh"></i><i class="h"></i><i></i>
+          <i class="h"></i><i class="hh"></i><i></i><i></i><i></i><i></i><i class="hh"></i><i class="h"></i>
+        </div>
+      </div>
+      <div class="wbox"><span class="pin c pinabs">5</span><div class="wl">⚠ 이상 Lot–Wafer 목록 <span class="mini">→ AI 분석 진입</span></div>
+        <table class="tbox" style="margin-top:7px"><tr><th>Lot</th><th>결함</th><th>수율</th><th>상태</th><th></th></tr>
+          <tr><td>LOT2381</td><td>Edge-Ring</td><td>87%</td><td>위험</td><td><a href="#screen2" class="cta" title="화면 2로 이동">AI ▶</a></td></tr>
+          <tr><td>LOT2379</td><td>Center</td><td>90%</td><td>주의</td><td><a href="#screen2" class="cta" title="화면 2로 이동">AI ▶</a></td></tr>
+        </table>
+        <div style="font-size:9px;color:var(--faint);margin-top:6px;font-family:var(--mono)">[AI ▶] 클릭 → 화면 2로 이동(데모) · 실제 분석 실행은 프로토타입</div>
+      </div>
+    </div>
+    <div class="infolist">
+      <div class="ilhead">📋 표시 정보 — 왼쪽 와이어프레임 번호별 설명</div>
+      <div class="info"><span class="pin">1</span><div class="tx"><div class="tt">KPI 카드 (Wafer/Die/EDS)</div><div class="td">현재 수율·EDS bin·이상 Lot 수·주 결함을 한눈에. 목표 대비 편차 강조.</div><div class="src">ref: Fanruan 수율구분 · KLA/Synopsys</div></div></div>
+      <div class="info"><span class="pin">2</span><div class="tx"><div class="tt">수율 추이 + 이상구간</div><div class="td">시계열에 변화점(수율 급락)을 자동 하이라이트 → 언제부터 무너졌나.</div><div class="src">ref: SPC 대시보드 · Minitab</div></div></div>
+      <div class="info"><span class="pin">3</span><div class="tx"><div class="tt">결함 분포 파레토</div><div class="td">어떤 결함이 많은가(빈도) — WM-811K 8종 분류 결과.</div><div class="src">ref: 결함 Pareto · NVIDIA 분류</div></div></div>
+      <div class="info"><span class="pin">4</span><div class="tx"><div class="tt">웨이퍼맵 (공간 패턴)</div><div class="td">defect-overlay/density hotspot 맵으로 결함이 어디 몰리나 — 링·클러스터·줄무늬.</div><div class="src">ref: Synopsys/KLA 맵유형 · Minitab</div></div></div>
+      <div class="info"><span class="pin c">5</span><div class="tx"><div class="tt">이상 Lot–Wafer 목록 ★</div><div class="td">문제 Lot·Wafer 테이블 + [AI 분석] 버튼 → <b>화면 2로 전환하는 트리거</b>.</div><div class="src">ref: PDF Solutions 계보 · 드릴다운</div></div></div>
+    </div>
+  </div>
+
+  <!-- ===== 화면 2 ===== -->
+  <h2 class="s2" id="screen2"><span class="b">화면 2</span> AI 에이전트 원인분석 &amp; 제안 <span style="font-size:13px;font-weight:600;color:var(--muted)">— 왜 그런가 규명 + 무엇을 할까</span></h2>
+  <p class="sub">선택된 Lot·Wafer에 대해 다중 에이전트가 판독→검색→가설→검증→제안하고, 진범을 근거와 함께 결론. 추론 공개수준(기밀)을 조절.</p>
+  <div class="wfwrap">
+    <div class="wf">
+      <div class="wtitle">🖥 WIREFRAME · 화면2 AI 원인분석</div>
+      <div class="wbox"><span class="pin pinabs">1</span><div class="wl">🧩 사건 헤더 <span class="mini">Lot · Wafer · 결함 · 수율</span></div></div>
+      <div class="wbox" style="border-style:solid;border-color:#bcd0c4;background:#f4faf6"><span class="pin g pinabs">2</span><div class="wl" style="color:var(--good)">✓ 최종 결론 카드 <span class="mini">진범 + 신뢰도 + 근거칩</span></div>
+        <div style="display:flex;align-items:center;gap:9px;margin-top:8px"><span style="font-weight:800;font-size:13.5px">진범: ETCH-03</span><span style="font-family:var(--mono);font-size:11px;color:var(--good);font-weight:700">신뢰도 92%</span></div>
+        <div style="display:flex;gap:5px;margin-top:7px;flex-wrap:wrap"><span class="minichip">FDC OOS</span><span class="minichip">t0 BM</span><span class="minichip">공통 8/8</span><span class="minichip">함정기각</span></div>
+      </div>
+      <div class="wrow a" style="margin-top:9px">
+        <div class="wbox"><span class="pin pinabs">3</span><div class="wl">🔗 에이전트 추론 트레이스 <span class="mini">T→A→O</span></div>
+          <div style="margin-top:7px;font-size:9.5px;font-family:var(--mono);color:var(--faint);line-height:1.7">
+            ① 판독 · <b style="color:#7a8695">완료</b><br>② 검색 · 완료<br>③ 가설 · 완료<br>④ 검증(FDC) · 확정<br>⑤ 제안 · 3건</div>
+        </div>
+        <div class="wbox"><span class="pin pinabs">4</span><div class="wl">🔬 근거 패널 <span class="mini">FDC · KG</span></div>
+          <div style="font-size:9px;font-family:var(--mono);color:var(--faint);margin-top:5px">증거체인: 센서 스파이크 ↔ 결함 시점 · rf_power OOS ▲</div>
+          <div class="chartbox" style="height:38px;margin-top:4px"><svg viewBox="0 0 200 38" preserveAspectRatio="none"><line x1="0" y1="11" x2="200" y2="11" stroke="#bcd3c4" stroke-dasharray="3 3"/><polyline fill="none" stroke="#2b7bb0" stroke-width="1.4" points="6,26 60,25 110,23 140,15 200,8"/></svg></div>
+          <div style="font-size:9px;font-family:var(--mono);color:var(--faint);margin-top:6px">공간패턴 사전 · KG 인과경로</div>
+        </div>
+      </div>
+      <div class="wbox"><span class="pin pinabs">5</span><div class="wl">🛠 조치 제안 <span class="mini">P1·P2·P3</span></div>
+        <div class="wrow k2" style="margin-top:7px"><div class="kbox" style="text-align:left"><div class="kk">P1 즉시</div><div style="font-size:10px;color:#526074;margin-top:3px">챔버 RF 점검</div></div><div class="kbox" style="text-align:left"><div class="kk">P2 격리</div><div style="font-size:10px;color:#526074;margin-top:3px">8-lot hold</div></div></div>
+      </div>
+      <div class="wbox" style="border-color:#e0cfa0;background:#fbf6e9"><span class="pin pinabs" style="background:var(--warn)">6</span><div class="wl" style="color:var(--warn)">🔐 공개수준(기밀) <span class="mini">예시1 · 예시2 · 예시3</span></div></div>
+      <div class="wbox" style="border-style:solid;border-color:#c9d6e6"><span class="pin pinabs" style="background:#3a5a8a">7</span><div class="wl">✅ 조치 승인 (HITL) <span class="mini">operator approval</span></div>
+        <div style="font-size:10px;color:#526074;margin-top:6px">영향 범위(blast radius): <b>Lot 8건</b> — 격리 3 · 감시 5</div>
+        <div style="display:flex;gap:5px;margin-top:7px;flex-wrap:wrap"><span class="abtn ok">격리+재교정</span><span class="abtn">감시만</span><span class="abtn">에스컬레이션</span><span class="abtn no">반려</span></div>
+      </div>
+    </div>
+    <div class="infolist">
+      <div class="ilhead">📋 표시 정보 — 왼쪽 와이어프레임 번호별 설명</div>
+      <div class="info"><span class="pin">1</span><div class="tx"><div class="tt">사건 헤더</div><div class="td">화면1에서 넘어온 Lot·Wafer·결함·수율 컨텍스트를 고정 표시.</div></div></div>
+      <div class="info"><span class="pin g">2</span><div class="tx"><div class="tt">최종 결론 + 근거 ★</div><div class="td">진범 장비 + 신뢰도 + "왜?" 근거칩(FDC OOS·시간정합·공통성·함정기각). 답만 X, 근거 필수.</div><div class="src">ref: WaferDSR-RAG 설명 · XAI</div></div></div>
+      <div class="info"><span class="pin">3</span><div class="tx"><div class="tt">에이전트 추론 트레이스 (T→A→O)</div><div class="td">5 에이전트를 순차 스트리밍 — 각 단계 Thought→Action(tool)→Observation. 소요시간·상태 실시간.</div><div class="src">ref: LangSmith · LangGraph Studio</div></div></div>
+      <div class="info"><span class="pin">4</span><div class="tx"><div class="tt">근거 패널</div><div class="td"><b>증거체인 타임라인</b>(센서 스파이크 ↔ 결함 시점) · FDC OOS 그래프 · 공간패턴 사전 · KG 인과경로 · 인용.</div><div class="src">ref: MongoDB SMF(evidence chain) · INFICON FDC · Minitab</div></div></div>
+      <div class="info"><span class="pin">5</span><div class="tx"><div class="tt">조치 제안</div><div class="td">확정 원인 기반 우선순위 조치(점검·격리·FDC 감시룰). Respond 단계.</div><div class="src">ref: FDC Detect-Classify-Respond</div></div></div>
+      <div class="info"><span class="pin" style="background:var(--warn)">6</span><div class="tx"><div class="tt">공개수준(기밀) 토글</div><div class="td">내부 추론을 어디까지 노출할지 3모델(전체/핵심/최소) — 영업기밀 마스킹.</div><div class="src">ref: WaferSAGE 온프레미스 · 역할적응형</div></div></div>
+      <div class="info"><span class="pin" style="background:#3a5a8a">7</span><div class="tx"><div class="tt">조치 승인 (HITL) — operator approval</div><div class="td">엔지니어가 승인/수정/반려. 영향 범위(blast radius)·조치·근거·신뢰도 확인 후 결정 → 불변 로그(ledger)에 기록(감사).</div><div class="src">ref: foundry-fab(온톨로지·승인·ledger)</div></div></div>
+    </div>
+  </div>
+
+  <!-- ===== 유저 플로우 ===== -->
+  <h2 class="flow"><span class="b">FLOW</span> 화면 1 → 화면 2 유저 플로우</h2>
+  <p class="sub">감지(화면1) → 규명·조치(화면2). 이상 Lot 목록의 [AI 분석]이 전환 트리거.</p>
+  <div class="flowcanvas">
+    <div class="flowscreens">
+      <div class="fscreen"><div class="fn">화면 1</div><div class="ft">📊 수율 모니터링 대시보드</div><div class="fl">KPI·추이·웨이퍼맵으로 <b>이상 감지</b> → 이상 Lot–Wafer 확인</div></div>
+      <div class="fconnect"><div class="trig">[AI 분석 ▶] 클릭<br>Lot·Wafer 전달</div><div class="arw">▶</div><div class="back">◀ 뒤로: 목록 복귀</div></div>
+      <div class="fscreen s2"><div class="fn">화면 2</div><div class="ft">🧠 AI 에이전트 원인분석 &amp; 제안</div><div class="fl">다중 에이전트 <b>추론→진범 확정→조치 제안</b> → 공개수준 선택 후 공유</div></div>
+    </div>
+    <div class="steps">
+      <div class="step"><span class="n"></span><div><div class="st2">대시보드 진입 <span class="scr a">화면1</span></div><div class="sd">KPI·수율 추이·EDS bin으로 현재 상태 확인.</div></div></div>
+      <div class="step"><span class="n"></span><div><div class="st2">이상 감지 <span class="scr a">화면1</span></div><div class="sd">추이 이상구간·웨이퍼맵 hotspot·이상 Lot 알람 포착.</div></div></div>
+      <div class="step"><span class="n"></span><div><div class="st2">이상 Lot·Wafer 확인·선택 <span class="scr a">화면1</span></div><div class="sd">이상 Lot 목록에서 위험 Lot → 불량 Wafer 선택.</div></div></div>
+      <div class="step h"><span class="n"></span><div><div class="st2">[AI 분석 ▶] — 화면 전환 <span class="scr a">화면1</span> → <span class="scr b">화면2</span></div><div class="sd">선택 Lot·Wafer 컨텍스트를 넘기며 화면 2로 이동, 분석 자동 실행.</div></div></div>
+      <div class="step"><span class="n"></span><div><div class="st2">에이전트 추론 관찰 <span class="scr b">화면2</span></div><div class="sd">판독→검색→가설→검증(FDC)→제안 스트리밍(T→A→O).</div></div></div>
+      <div class="step"><span class="n"></span><div><div class="st2">결론·근거 확인 <span class="scr b">화면2</span></div><div class="sd">진범 장비 + 신뢰도 + 근거(함정기각 포함) 검토.</div></div></div>
+      <div class="step"><span class="n"></span><div><div class="st2">조치 + 공개수준 선택 후 공유 <span class="scr b">화면2</span></div><div class="sd">조치 지시/Lot hold, 수신자별 기밀수준(예시1/2/3)으로 공유. 필요 시 ◀ 목록 복귀.</div></div></div>
+    </div>
+  </div>
+
+  <!-- ===== 참고 레퍼런스 (토글) ===== -->
+  <details class="reftoggle">
+    <summary>📚 참고 레퍼런스 <span class="cnt">상용·논문 14 + GitHub 오픈소스 13 — 펼치기</span></summary>
+    <div class="rbody">
+      <div class="refgrid">
+        <div class="refcard"><div class="rh">🏭 수율·웨이퍼맵·이상탐지 (상용)</div>
+          <ul>
+            <li><b>Synopsys Odyssey</b> — 인라인 수율관리(YMS)·결함 데이터관리. <a href="https://www.synopsys.com/manufacturing/manufacturing-analytics/odyssey.html">synopsys.com/…/odyssey</a></li>
+            <li><b>KLA Klarity</b> — 결함 검사·분류·근본원인. <a href="https://www.kla.com/products/software-solutions/semiconductor">kla.com/…/semiconductor</a></li>
+            <li><b>DR YIELD YieldWatchDog</b> — 수율·테스트 고급분석. <a href="https://dryield.com/semiconductor-test-and-yield-data-visualization/">dryield.com</a></li>
+            <li><b>yieldWerx</b> — 예측 AI 수율분석. <a href="https://yieldwerx.com/">yieldwerx.com</a></li>
+            <li><b>INFICON FabGuard FDC</b> — 실시간 이상탐지. <a href="https://www.inficon.com/en/products/intelligent-manufacturing-systems/fabguard-fdc">inficon.com/…/fabguard-fdc</a></li>
+            <li><b>JMP · Spotfire · SciChart</b> — 반도체 데이터 분석. <a href="https://www.jmp.com/en/industries/data-analysis-software-for-the-semiconductor-industry">jmp.com</a></li>
+          </ul>
+        </div>
+        <div class="refcard"><div class="rh">🧠 AI 추론과정 시각화</div>
+          <ul>
+            <li><b>LangSmith</b> — Thought→Action→Observation 추적, tree-of-thought, Observation Stream. <a href="https://www.langchain.com/langsmith">langchain.com/langsmith</a></li>
+            <li><b>LangGraph Studio</b> — 에이전트 의사결정 흐름·중간상태 시각화. <a href="https://mem0.ai/blog/visual-ai-agent-debugging-langgraph-studio">mem0.ai/…/langgraph-studio</a></li>
+            <li><b>Deep Agents UI</b> — 복잡 에이전트 디버깅 UI. <a href="https://starlog.is/articles/ai-agents/langchain-ai-deep-agents-ui/">starlog.is/…/deep-agents-ui</a></li>
+            <li><b>Averroes / eInnoSys FDC</b> — Detect→Classify→Respond 패턴. <a href="https://averroes.ai/blog/fault-detection-classification-system-fdc-explained">averroes.ai/…/fdc</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="rh" style="font-weight:800;font-size:12.5px;margin:16px 0 3px;display:flex;align-items:center;gap:7px">🧩 오픈소스 유사 시스템 (GitHub · 팀 공유 13종)</div>
+      <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">핵심 정합: 우리 <b>T→A→O 추론 = 이들의 ReAct(Reason→Act→Observe)</b> · <b>MCP 도구층</b> · <b>온톨로지=지식그래프</b> · <b>operator 승인·evidence chain</b>을 화면 2에 반영. <span style="color:var(--faint)">(★ = 직접 열어 아키텍처 확인)</span></div>
+      <table class="rtable">
+        <tr><th>Repo</th><th>핵심</th><th>반영 위치</th></tr>
+        <tr><td class="n">★ <a href="https://github.com/mongodb-industry-solutions/smf-yield-defect-detection">MongoDB SMF</a></td><td>alert→ReAct RCA→evidence chain report (LangGraph)</td><td>화면2 증거체인·툴패널·스트리밍</td></tr>
+        <tr><td class="n">★ <a href="https://github.com/AlanTseng1018/LLM-Agent-Yield-Analysis-Engine">LLM-Agent Yield</a></td><td>ReAct(Reason→Act→Observe)+MCP+wafermap+P-chart</td><td>T→A→O·MCP 도구층 확증</td></tr>
+        <tr><td class="n">★ <a href="https://github.com/Ys876/foundry-fab">foundry-fab</a></td><td>온톨로지+deterministic rules+operator 승인+ledger</td><td>화면2 ⑦승인·blast radius·감사</td></tr>
+        <tr><td class="n">★ <a href="https://github.com/cocomilkteazz/Semiconductor_Yield_Agent_System">Semiconductor Yield Agent</a></td><td>Data Agent + Reasoning Agent 2계층</td><td>도구층/추론층 분리 확증</td></tr>
+        <tr><td class="n"><a href="https://github.com/ben7am1n/yieldMind">yieldMind</a></td><td>LangGraph 수율 멀티에이전트</td><td>에이전트 구조</td></tr>
+        <tr><td class="n"><a href="https://github.com/chakradharkalle03-arch/Wafer-Defect-Analysis-Multi-Agent-System">Wafer-Defect MAS</a></td><td>이미지 결함분류+RCA+리포트</td><td>판독·리포트</td></tr>
+        <tr><td class="n"><a href="https://github.com/WH-HuanWang/Defect-GLM">Defect-GLM</a></td><td>VisualGLM wafer 결함 진단</td><td>판독 UI</td></tr>
+        <tr><td class="n"><a href="https://github.com/rajendarmuddasani/LangGraph-Multi-Agent-Test-Failure-RCA-Platform">LangGraph Test-Failure RCA</a></td><td>반도체 테스트 실패 RCA</td><td>테스트 도메인 확장</td></tr>
+        <tr><td class="n"><a href="https://github.com/henryxu21/stdf_mcp">stdf_mcp</a></td><td>STDF 테스트파일 분석 MCP 서버</td><td>도구층(테스트 데이터)</td></tr>
+        <tr><td class="n"><a href="https://github.com/janhavi-giri/semiconductor-wafer-clustering-ai-agent">Wafer Clustering Agent</a></td><td>웨이퍼 결함 클러스터링</td><td>결함 군집</td></tr>
+        <tr><td class="n"><a href="https://github.com/showjim/chao-skills">chao-skills</a></td><td>반도체 데이터분석 skill 모음</td><td>참고(미독)</td></tr>
+        <tr><td class="n"><a href="https://github.com/chakradharkalle03-arch/Semiconductor-Yield-Prediction-Optimization-Multi-Agent-System">Yield Predict+Optimize MAS</a></td><td>수율 예측+공정 최적화</td><td>예측 확장</td></tr>
+        <tr><td class="n"><a href="https://github.com/TheDemonMahesh/SemiAI">SemiAI</a></td><td>로컬 LLM+MCP 테스트/수율 인텔리전스</td><td>온프레미스·MCP</td></tr>
+      </table>
+
+      <table class="rtable">
+        <tr><th>레퍼런스</th><th>유형</th><th>반영 위치</th><th>링크</th></tr>
+        <tr><td class="n">Synopsys Odyssey</td><td>YMS/수율</td><td>화면1 KPI·맵유형</td><td><a href="https://www.synopsys.com/manufacturing/manufacturing-analytics/odyssey.html">synopsys.com/…/odyssey</a></td></tr>
+        <tr><td class="n">KLA Klarity</td><td>결함/근본원인</td><td>화면1 파레토·맵 · 화면2 RCA</td><td><a href="https://www.kla.com/products/software-solutions/semiconductor">kla.com/…/semiconductor</a></td></tr>
+        <tr><td class="n">DR YIELD YieldWatchDog</td><td>수율 분석</td><td>화면1 전반</td><td><a href="https://dryield.com/semiconductor-test-and-yield-data-visualization/">dryield.com</a></td></tr>
+        <tr><td class="n">yieldWerx</td><td>예측 수율AI</td><td>화면1 예측 확장</td><td><a href="https://yieldwerx.com/">yieldwerx.com</a></td></tr>
+        <tr><td class="n">INFICON FabGuard FDC</td><td>이상탐지/FDC</td><td>화면2 검증·근거·제안</td><td><a href="https://www.inficon.com/en/products/intelligent-manufacturing-systems/fabguard-fdc">inficon.com/…/fabguard-fdc</a></td></tr>
+        <tr><td class="n">Averroes / eInnoSys FDC</td><td>FDC UI 패턴</td><td>화면2 Detect-Classify-Respond</td><td><a href="https://averroes.ai/blog/fault-detection-classification-system-fdc-explained">averroes.ai/…/fdc</a></td></tr>
+        <tr><td class="n">LangSmith</td><td>AI 추론 시각화</td><td>화면2 T→A→O 트레이스</td><td><a href="https://www.langchain.com/langsmith">langchain.com/langsmith</a></td></tr>
+        <tr><td class="n">LangGraph Studio</td><td>에이전트 시각화</td><td>화면2 추론 스트리밍</td><td><a href="https://mem0.ai/blog/visual-ai-agent-debugging-langgraph-studio">mem0.ai/…/langgraph-studio</a></td></tr>
+        <tr><td class="n">Deep Agents UI</td><td>에이전트 디버그 UI</td><td>화면2 감사</td><td><a href="https://starlog.is/articles/ai-agents/langchain-ai-deep-agents-ui/">starlog.is/…/deep-agents-ui</a></td></tr>
+        <tr><td class="n">NVIDIA VLM/VFM</td><td>결함 판독</td><td>화면2 ①판독(T→A→O)</td><td><a href="https://developer.nvidia.com/blog/optimizing-semiconductor-defect-classification-with-generative-ai-and-vision-foundation-models/">developer.nvidia.com/blog/…</a></td></tr>
+        <tr><td class="n">WaferSAGE</td><td>온프레미스 VLM</td><td>화면2 공개수준·판독</td><td><a href="https://arxiv.org/html/2604.27629v4">arxiv.org/html/2604.27629v4</a></td></tr>
+        <tr><td class="n">WaferDSR-RAG</td><td>검색증강·역할설명</td><td>화면2 ②검색·공개수준</td><td>J. Manufacturing Systems 85 (2026)</td></tr>
+        <tr><td class="n">Minitab 웨이퍼플롯</td><td>공간패턴 진단</td><td>화면1 맵 · 화면2 패턴사전</td><td><a href="https://blog.minitab.com/en/blog/wafer-plots-for-better-yields">blog.minitab.com/…/wafer-plots</a></td></tr>
+        <tr><td class="n">PDF Solutions Exensio</td><td>계보/commonality</td><td>화면2 ④검증</td><td><a href="https://www.pdf.com/products/exensio-analytics-platform/">pdf.com/…/exensio</a></td></tr>
+      </table>
+    </div>
+  </details>
+
+  <div class="foot">화면 설계 명세 · 화면1 수율 대시보드 + 화면2 AI 원인분석 · 와이어프레임 + 유저플로우 7단계 + 정보구조 · 참고 레퍼런스 토글 · 실동작 프로토타입 = agent_rca_prototype.html · 기밀 공개수준 = disclosure_models.html</div>
+</div>
+<script>
+document.querySelectorAll('a.cta[href="#screen2"]').forEach(function(a){
+  a.addEventListener('click',function(){
+    var t=document.getElementById('screen2');
+    if(!t)return;
+    t.classList.remove('flash'); void t.offsetWidth; t.classList.add('flash');
+  });
+});
+</script>

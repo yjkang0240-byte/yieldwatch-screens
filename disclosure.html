@@ -1,0 +1,190 @@
+<title>AI 원인분석 · 사용자 공개수준 3모델 (기밀 보호 관점)</title>
+<style>
+ :root{--bg:#eceef2;--panel:#fff;--ink:#141b26;--muted:#5b6b7e;--faint:#93a1b2;--hair:#e4e8ee;--line2:#d3dae3;
+   --accent:#1f6feb;--accent-d:#1857c0;--accent-s:#eaf1fd;--good:#1f9d57;--good-s:#e6f6ec;--warn:#d98a1f;--warn-s:#fdf3e2;
+   --crit:#d64545;--crit-s:#fcebea;--purple:#7a4fd0;--purple-s:#f0eafb;--lock:#8a6d1e;--lock-s:#fbf3d9;
+   --mono:"Cascadia Code","Consolas",ui-monospace,monospace;--sans:"Segoe UI Variable","Segoe UI","Malgun Gothic",system-ui,sans-serif;}
+ *{box-sizing:border-box;margin:0;padding:0}
+ body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5}
+ .page{max-width:1080px;margin:0 auto;padding:34px 20px 70px}
+ .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);font-weight:700}
+ h1{font-size:26px;font-weight:800;letter-spacing:-.01em;margin:.3em 0 .2em}
+ .lead{color:var(--muted);max-width:82ch;font-size:14.5px}.lead b{color:var(--ink)}
+ .principle{background:#0f1b2d;color:#dbe6f2;border-radius:13px;padding:16px 20px;margin:18px 0;font-size:13.5px;line-height:1.6}
+ .principle b{color:#7fb2f0} .principle .lk{color:#e9cf7a}
+ /* 마스킹 매트릭스 */
+ h2.sec{font-size:17px;font-weight:800;margin:34px 0 10px;display:flex;align-items:center;gap:9px}
+ h2.sec .b{font-family:var(--mono);font-size:11px;font-weight:800;color:#fff;background:var(--ink);border-radius:6px;padding:3px 9px}
+ .matrix{width:100%;border-collapse:collapse;font-size:12.5px;background:#fff;border:1px solid var(--hair);border-radius:11px;overflow:hidden}
+ .matrix th,.matrix td{border-bottom:1px solid var(--hair);border-right:1px solid var(--hair);padding:9px 11px;text-align:left;vertical-align:top}
+ .matrix th{background:#f4f7fa;font-size:11px;color:var(--muted)} .matrix th.m1{background:#e9f2fb;color:var(--accent)} .matrix th.m2{background:#fbf3e2;color:var(--warn)} .matrix th.m3{background:#fceaea;color:var(--crit)}
+ .matrix td:last-child,.matrix th:last-child{border-right:none} .matrix td.n{font-weight:800;white-space:nowrap}
+ .ok{color:var(--good);font-weight:700} .lk{color:var(--lock);font-weight:700} .no{color:var(--crit);font-weight:700}
+ /* 페이지 프레임 (스크린 목업) */
+ .pageframe{background:#fff;border:1px solid var(--line2);border-radius:14px;overflow:hidden;box-shadow:0 10px 30px rgba(20,40,80,.1);margin:16px 0 26px}
+ .winbar{display:flex;align-items:center;gap:10px;padding:12px 18px;color:#fff}
+ .winbar.m1{background:linear-gradient(90deg,#15325b,#1f6feb)} .winbar.m2{background:linear-gradient(90deg,#7a5410,#d98a1f)} .winbar.m3{background:linear-gradient(90deg,#7a1f1f,#d64545)}
+ .winbar .dots{display:flex;gap:5px} .winbar .dots i{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.4);display:block}
+ .winbar .wt{font-weight:800;font-size:14px;margin-left:6px} .winbar .mno{font-family:var(--mono);font-size:11px;background:rgba(255,255,255,.2);border-radius:6px;padding:3px 9px;font-weight:700}
+ .winbar .aud{margin-left:auto;font-size:11.5px;opacity:.95;text-align:right;line-height:1.4}
+ .winbar .lock{font-size:12px;font-weight:800;background:rgba(255,255,255,.16);border-radius:20px;padding:4px 11px}
+ .pbody{padding:20px 22px;background:#f7f9fb}
+ /* 결론 카드 */
+ .verdict{background:#fff;border:1px solid var(--hair);border-radius:12px;padding:16px 18px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+ .verdict .vb{font-family:var(--mono);font-size:10px;font-weight:800;background:var(--good-s);color:var(--good);border-radius:6px;padding:3px 9px}
+ .verdict h3{font-size:20px;font-weight:800;margin:8px 0 2px} .verdict h3 .eq{color:var(--accent)}
+ .verdict .sub{font-size:12.5px;color:var(--muted)}
+ .verdict .conf{margin-left:auto;text-align:center} .verdict .conf b{font-size:26px;font-weight:800;color:var(--good);display:block} .verdict .conf span{font-size:10px;color:var(--faint);font-family:var(--mono)}
+ .block{background:#fff;border:1px solid var(--hair);border-radius:12px;padding:14px 16px;margin-top:12px}
+ .block .bt{font-size:12.5px;font-weight:800;margin-bottom:9px;display:flex;align-items:center;gap:7px} .block .bt .r{margin-left:auto;font-size:10px;font-family:var(--mono);color:var(--faint)}
+ /* 마스킹 표현 */
+ .masked{background:repeating-linear-gradient(45deg,#e7ebf1,#e7ebf1 6px,#dfe4ea 6px,#dfe4ea 12px);color:var(--lock);border-radius:5px;padding:1px 9px;font-family:var(--mono);font-size:11.5px;font-weight:700;border:1px solid #d7cca3}
+ .anon{font-style:italic;color:var(--muted)} .anon::before{content:"🔒 ";font-style:normal;font-size:10px}
+ .real{font-family:var(--mono);font-weight:700;color:var(--ink)}
+ .reveal-line{font-size:12.5px;padding:5px 0 5px 20px;position:relative;color:#3a4757;border-bottom:1px dashed var(--hair)} .reveal-line:last-child{border:none}
+ .reveal-line::before{content:"↳";position:absolute;left:4px;color:var(--faint)}
+ .reveal-line b{color:var(--ink)} .reveal-line .cite{font-family:var(--mono);font-size:10px;color:var(--accent)}
+ .agentmini{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--hair);font-size:12.5px} .agentmini:last-child{border:none}
+ .agentmini .ic{width:26px;height:26px;border-radius:7px;background:var(--accent-s);display:flex;align-items:center;justify-content:center;font-size:13px;flex:none}
+ .agentmini .an{font-weight:700} .agentmini .ao{color:var(--muted);margin-left:auto;font-size:12px}
+ .hidebox{background:var(--lock-s);border:1px dashed #d7cca3;border-radius:10px;padding:13px 15px;text-align:center;color:var(--lock);font-size:12.5px;font-weight:600;margin-top:12px}
+ .hidebox .big{font-size:20px} .hidebox b{color:#6b530f}
+ svg.tele{width:100%;height:auto;display:block}
+ .rec{font-size:12.5px;padding:6px 0;border-bottom:1px solid var(--hair);display:flex;gap:9px} .rec:last-child{border:none} .rec .p{font-family:var(--mono);font-size:9.5px;font-weight:800;color:var(--crit);flex:none;padding-top:2px}
+ /* 공개/마스킹 요약 푸터 */
+ .discfoot{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+ .df{border-radius:10px;padding:11px 14px;font-size:12px} .df.show{background:var(--good-s);border:1px solid #b7dfc6} .df.hide{background:var(--lock-s);border:1px solid #e2d3a0}
+ .df .h{font-weight:800;font-size:11.5px;margin-bottom:5px} .df.show .h{color:var(--good)} .df.hide .h{color:var(--lock)}
+ .df ul{margin:0;padding-left:16px;line-height:1.6} .df li{color:#3a4757}
+ .refnote{background:#eef4fb;border:1px solid #cfe0f0;border-radius:9px;padding:9px 13px;margin-top:12px;font-size:11.5px;color:var(--muted)}.refnote b{color:var(--accent)} .refnote .src{font-family:var(--mono);font-size:10px;color:var(--accent)}
+ .refs{background:#fff;border:1px solid var(--hair);border-radius:12px;padding:15px 17px;margin-top:20px;font-size:12px}
+ .refs .rh{font-weight:800;margin-bottom:8px} .refs li{margin:5px 0;color:var(--muted);line-height:1.5} .refs b{color:var(--ink)} .refs .src{font-family:var(--mono);font-size:10px;color:var(--accent)}
+ .foot{margin-top:34px;padding-top:18px;border-top:1px solid var(--hair);color:var(--faint);font-size:12px}
+ @media(max-width:760px){.discfoot{grid-template-columns:1fr}.winbar .aud{display:none}}
+</style>
+
+<div class="page">
+  <div class="eyebrow">기밀 보호 · 공개수준 3모델</div>
+  <h1>AI 원인분석 결과 — 사용자에게 어디까지 보여줄까</h1>
+  <p class="lead">같은 분석(사건 <b>EVT-2381</b> · 진범 확정)을 <b>수신자 권한별 3개 모델</b>로 각각 다른 페이지에 렌더링합니다.
+  핵심 원칙: <b>회사 공정의 실제 장비·파라미터·사내 문헌을 그대로 노출하면 영업기밀이 유출</b>됩니다 → 권한이 낮을수록 <b>마스킹(🔒)</b>을 강하게 적용.</p>
+
+  <div class="principle">
+    🔐 <b>왜 마스킹인가</b> — 진범 장비 실명(<span class="lk">ETCH-03</span>), 정확한 규격값(<span class="lk">2400–2600W</span>), 사내 문헌(<span class="lk">mapping_table.yaml</span>), telemetry 원본은 모두 <b>영업기밀·공정 IP</b>. 분석 자체는 <b>온프레미스</b>(WaferSAGE — fab 데이터 외부반출 0)에서 돌지만, <b>결과를 누구에게 보여주느냐</b>에 따라 노출 깊이를 조절해야 유출을 막습니다. 아래 3모델은 <b>WaferDSR-RAG의 "역할적응형 설명"</b> + <b>루브릭 민감정보 필터</b> 개념을 기밀 관점으로 구현한 것.
+  </div>
+
+  <!-- 마스킹 매트릭스 -->
+  <h2 class="sec"><span class="b">비교</span> 3모델이 공개 / 마스킹하는 항목</h2>
+  <table class="matrix">
+    <tr><th>정보 항목 (민감도)</th><th class="m1">모델 1 · 전체 공개</th><th class="m2">모델 2 · 핵심 공개</th><th class="m3">모델 3 · 최소 공개</th></tr>
+    <tr><td class="n">결함 유형</td><td class="ok">Edge-Ring</td><td class="ok">Edge-Ring</td><td class="ok">Edge-Ring</td></tr>
+    <tr><td class="n">진범 장비 실명 🔴</td><td class="ok">ETCH-03</td><td class="lk">식각장비 A (익명)</td><td class="no">🔒 특정 공정장비</td></tr>
+    <tr><td class="n">파라미터·규격값 🔴</td><td class="ok">rf 2680 / 2400–2600W</td><td class="lk">규격 대비 +3% 이탈</td><td class="no">🔒</td></tr>
+    <tr><td class="n">에이전트 추론 트레이스 🟠</td><td class="ok">전 과정</td><td class="lk">핵심 요약만</td><td class="no">🔒 결론만</td></tr>
+    <tr><td class="n">사내 문헌 인용 🔴</td><td class="ok">mapping_table:L47 등</td><td class="no">🔒</td><td class="no">🔒</td></tr>
+    <tr><td class="n">telemetry 원본 그래프 🟠</td><td class="ok">실측 곡선</td><td class="lk">상대 편차만</td><td class="no">🔒</td></tr>
+    <tr><td class="n">조치 내용 🟠</td><td class="ok">챔버 RF 점검 상세</td><td class="lk">장비 점검(일반)</td><td class="lk">조치 완료</td></tr>
+    <tr><td class="n">신뢰도</td><td class="ok">92%</td><td class="ok">92%</td><td class="ok">92%</td></tr>
+    <tr><td class="n">대상 수신자</td><td>사내 공정 엔지니어<br><span style="color:var(--faint);font-size:11px">(기밀 접근권한 O)</span></td><td>협력사·타 부서<br><span style="color:var(--faint);font-size:11px">(부분 권한)</span></td><td>외부 고객·경영 요약<br><span style="color:var(--faint);font-size:11px">(권한 없음)</span></td></tr>
+  </table>
+
+  <!-- ============ 페이지 1 : 모델 1 전체 공개 ============ -->
+  <h2 class="sec"><span class="b" style="background:var(--accent)">페이지 1</span> 모델 1 · 전체 공개 <span style="font-size:13px;font-weight:600;color:var(--muted)">(내부 추론 전 과정)</span></h2>
+  <div class="pageframe">
+    <div class="winbar m1"><div class="dots"><i></i><i></i><i></i></div><span class="wt">AI 원인분석 결과</span><span class="mno">MODEL 1</span>
+      <div class="aud">🔓 기밀 전체 열람 · <b>사내 공정 엔지니어</b><br><span style="opacity:.85">온프레미스 · 감사 가능</span></div></div>
+    <div class="pbody">
+      <div class="verdict"><div><span class="vb">✓ 최종 결론</span><h3>진범 = <span class="eq real">ETCH-03</span></h3><div class="sub">식각 RF power 이상 → Edge-Ring · 다중 에이전트 합의</div></div><div class="conf"><b>92%</b><span>신뢰도</span></div></div>
+
+      <div class="block"><div class="bt">🔗 에이전트 내부 추론 — 전 과정 공개 <span class="r">5 에이전트</span></div>
+        <div class="reveal-line"><b>①판독</b>: Cosmos Reason VLM "링 전체 둘레 연속 결함" → Edge-Ring 0.94 · NV-DINOv2 die 유사검색 7/8. <span class="cite">[NVIDIA VLM/VFM]</span></div>
+        <div class="reveal-line"><b>②검색</b>: KG 인출 → 식각 RF 0.48 · RTP 온도 0.30(Minitab 패턴). <span class="cite">[mapping_table:L47 · minitab]</span></div>
+        <div class="reveal-line"><b>③가설</b>: <span class="real">ETCH-03</span>(rf_power) vs <span class="real">RTP-02</span>(edge_temp) 경쟁.</div>
+        <div class="reveal-line"><b>④검증(FDC)</b>: <span class="real">ETCH-03 rf_power 2680W</span> (규격 <span class="real">2400–2600W</span>) OOS 12점 + BM −1d → 확정. RTP-02 온도 정상 → 경쟁가설 기각. LITHO-01 → 함정 기각. <span class="cite">[INFICON FDC · genealogy]</span></div>
+        <div class="reveal-line"><b>⑤제안</b>: ETCH-03 챔버 RF 매칭 점검 · 8-lot hold · FDC 룰 추가.</div>
+      </div>
+
+      <div class="block"><div class="bt">📉 FDC telemetry 원본 <span class="r">ETCH-03 · rf_power</span></div>
+        <svg viewBox="0 0 640 120" class="tele">
+          <rect x="38" y="28" width="590" height="46" fill="#1f9d57" opacity="0.07"/>
+          <line x1="38" y1="28" x2="628" y2="28" stroke="#1f9d57" stroke-dasharray="4 3"/><text x="41" y="24" font-size="9" fill="#1f9d57" font-family="monospace">2600</text>
+          <line x1="38" y1="74" x2="628" y2="74" stroke="#1f9d57" stroke-dasharray="4 3"/><text x="41" y="86" font-size="9" fill="#1f9d57" font-family="monospace">2400</text>
+          <rect x="470" y="6" width="158" height="108" fill="#d64545" opacity="0.06"/>
+          <polyline fill="none" stroke="#2b7bb0" stroke-width="2" points="42,54 100,58 160,50 220,56 280,52 340,58 400,50 450,40 490,22 550,16 610,20"/>
+          <circle cx="490" cy="22" r="3.5" fill="#d64545"/><text x="452" y="12" font-size="9" fill="#d64545" font-family="'Malgun Gothic'">BM 후 상향(2680W)</text>
+        </svg>
+      </div>
+
+      <div class="discfoot">
+        <div class="df show"><div class="h">🔓 공개</div><ul><li>장비 실명·파라미터·규격 실측</li><li>에이전트 추론 전 과정 + 사내 문헌 인용</li><li>telemetry 원본·감사·정답대조</li></ul></div>
+        <div class="df hide"><div class="h">🔒 마스킹</div><ul><li>없음 — 사내 기밀권한자 대상</li></ul></div>
+      </div>
+      <div class="refnote"><b>근거</b> — WaferDSR-RAG <b>역할적응형 설명</b>의 "엔지니어" 역할. 온프레미스(WaferSAGE)라 데이터가 fab을 벗어나지 않아 전체 열람 허용. <span class="src">WaferDSR-RAG · WaferSAGE on-prem</span></div>
+    </div>
+  </div>
+
+  <!-- ============ 페이지 2 : 모델 2 핵심 공개 ============ -->
+  <h2 class="sec"><span class="b" style="background:var(--warn)">페이지 2</span> 모델 2 · 핵심 공개 <span style="font-size:13px;font-weight:600;color:var(--muted)">(핵심만 · 민감정보 마스킹)</span></h2>
+  <div class="pageframe">
+    <div class="winbar m2"><div class="dots"><i></i><i></i><i></i></div><span class="wt">AI 원인분석 결과</span><span class="mno">MODEL 2</span>
+      <div class="aud">🔒 부분 열람 · <b>협력사 · 타 부서</b><br><span style="opacity:.85">장비ID·규격값 익명화</span></div></div>
+    <div class="pbody">
+      <div class="verdict"><div><span class="vb">✓ 최종 결론</span><h3>진범 = <span class="anon">식각장비 A</span></h3><div class="sub">식각 공정 파라미터 이상 → Edge-Ring · AI 다중 에이전트</div></div><div class="conf"><b>92%</b><span>신뢰도</span></div></div>
+
+      <div class="block"><div class="bt">🔗 에이전트 판정 요약 <span class="r">추론 상세 비공개</span></div>
+        <div class="agentmini"><div class="ic">👁</div><div class="an">판독</div><div class="ao">Edge-Ring 확인 (신뢰도 0.94)</div></div>
+        <div class="agentmini"><div class="ic">🔎</div><div class="an">지식검색</div><div class="ao">유력 원인 2후보 도출</div></div>
+        <div class="agentmini"><div class="ic">🧪</div><div class="an">검증(FDC)</div><div class="ao">파라미터 <span class="masked">규격 +3% 이탈</span> → 확정</div></div>
+        <div class="agentmini"><div class="ic">🛠</div><div class="an">제안</div><div class="ao">해당 장비 점검 권고</div></div>
+      </div>
+
+      <div class="block"><div class="bt">📊 근거 요약 <span class="r">원본값 마스킹</span></div>
+        <div class="reveal-line">공간 패턴 <b>Edge 링</b> → 유력 원인 <b>식각 rate 비균일</b> (경쟁 가설 "온도"는 증거로 기각). <span class="cite">[공간패턴 사전]</span></div>
+        <div class="reveal-line">장비 파라미터가 <span class="masked">정상범위 초과</span> + 직전 정비 이력 정합 → 인과 확정. <span style="color:var(--lock);font-size:11px">🔒 정확한 규격·수치 비공개</span></div>
+      </div>
+
+      <div class="discfoot">
+        <div class="df show"><div class="h">🔓 공개</div><ul><li>결함 유형·판정 결과·신뢰도</li><li>원인의 <b>성격</b>(식각 파라미터 이상)</li><li>이상 <b>정도</b>(규격 대비 +3%)</li></ul></div>
+        <div class="df hide"><div class="h">🔒 마스킹</div><ul><li>장비 실명 → "식각장비 A"</li><li>정확한 규격·수치·telemetry 원본</li><li>사내 문헌 인용·추론 트레이스</li></ul></div>
+      </div>
+      <div class="refnote"><b>근거</b> — WaferSAGE 루브릭의 <b>must-avoid(민감어 차단)</b> 개념을 기밀 필터로 활용: 장비ID·규격 절대값 등 IP는 상대표현으로 치환. <span class="src">WaferSAGE rubric · 역할적응형(협력사)</span></div>
+    </div>
+  </div>
+
+  <!-- ============ 페이지 3 : 모델 3 최소 공개 ============ -->
+  <h2 class="sec"><span class="b" style="background:var(--crit)">페이지 3</span> 모델 3 · 최소 공개 <span style="font-size:13px;font-weight:600;color:var(--muted)">(결론·조치만 · 공정지식 노출 0)</span></h2>
+  <div class="pageframe">
+    <div class="winbar m3"><div class="dots"><i></i><i></i><i></i></div><span class="wt">품질 이슈 안내</span><span class="mno">MODEL 3</span>
+      <div class="aud">🔒 결과 요약 · <b>외부 고객 · 경영 요약</b><br><span style="opacity:.85">공정 세부 전면 비공개</span></div></div>
+    <div class="pbody">
+      <div class="verdict"><div><span class="vb" style="background:var(--accent-s);color:var(--accent)">원인 규명 완료</span><h3>Edge-Ring 결함 — <span style="color:var(--good)">원인 확인 · 조치 완료</span></h3><div class="sub">특정 공정 장비의 파라미터 이상으로 확인, 시정 조치 진행됨</div></div><div class="conf"><b>92%</b><span>진단 신뢰도</span></div></div>
+
+      <div class="hidebox"><div class="big">🔒</div><b>내부 분석 상세는 비공개입니다</b><br>사용된 장비·공정 파라미터·AI 추론 과정은 <b>영업기밀</b>로 보호됩니다.<br><span style="font-size:11px;color:var(--muted)">필요 시 권한 승인 후 상세(모델 1·2) 열람 가능</span></div>
+
+      <div class="block"><div class="bt">✅ 진행 상태</div>
+        <div class="rec"><span class="p" style="color:var(--good)">완료</span><div>결함 원인 규명 (AI 다중 에이전트 분석)</div></div>
+        <div class="rec"><span class="p" style="color:var(--good)">완료</span><div>해당 장비 시정 조치</div></div>
+        <div class="rec"><span class="p" style="color:var(--warn)">진행</span><div>동일 원인 확산 점검 · 재발 방지 감시 등록</div></div>
+      </div>
+
+      <div class="discfoot">
+        <div class="df show"><div class="h">🔓 공개</div><ul><li>결함 유형·조치 상태·신뢰도</li><li>"원인 규명·조치 완료" 사실</li></ul></div>
+        <div class="df hide"><div class="h">🔒 마스킹</div><ul><li>장비·공정·파라미터 전부</li><li>에이전트 추론·근거·telemetry 전부</li><li>사내 문헌·감사 데이터 전부</li></ul></div>
+      </div>
+      <div class="refnote"><b>근거</b> — 온프레미스 분석의 <b>결과 요약만 외부 배포</b>. 공정 IP 노출 0 원칙(기밀 최우선). WaferDSR-RAG 역할적응형의 최상위 추상화 설명. <span class="src">WaferSAGE on-prem · 최소권한 원칙</span></div>
+    </div>
+  </div>
+
+  <!-- 참고자료 -->
+  <div class="refs">
+    <div class="rh">📚 이 3모델 설계에 실제 반영한 참고자료</div>
+    <ul style="margin:0;padding-left:18px">
+      <li><b>WaferSAGE</b> — <b>온프레미스(fab 데이터 외부반출 0)</b>가 전체 설계의 전제. 루브릭 <b>must-avoid</b>를 민감정보(장비ID·규격) 필터로 차용. <span class="src">arxiv 2604.27629v4</span></li>
+      <li><b>WaferDSR-RAG</b> — <b>역할적응형 설명(role-adaptive)</b> = 수신자별 다른 공개수준의 직접 근거(엔지니어/협력사/외부). <span class="src">J. Manufacturing Systems 85 (2026)</span></li>
+      <li><b>INFICON FDC · PDF Solutions 계보 · Fanruan 수율</b> — 마스킹 <b>대상</b>이 되는 기밀 데이터(telemetry 원본·genealogy·EDS bin·규격)의 출처. <span class="src">inficon · pdf.com · fanruan</span></li>
+      <li><b>NVIDIA VLM/VFM · Minitab</b> — 모델1에서 공개되는 판독·공간패턴 근거(Cosmos Reason·NV-DINOv2·웨이퍼플롯). <span class="src">developer.nvidia.com · blog.minitab.com/ko</span></li>
+    </ul>
+  </div>
+
+  <div class="foot">AI 원인분석 · 사용자 공개수준 3모델(전체/핵심/최소) · 기밀 보호(마스킹) 관점 · 3페이지 비교 · 대상별 역할적응형 · 참고자료 반영 · 인터랙티브 토글판은 agent_rca_prototype.html</div>
+</div>

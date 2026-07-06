@@ -1,0 +1,704 @@
+<meta charset="utf-8">
+<title>YieldWatch — AI RCA 인터랙티브 프로토타입</title>
+<style>
+ :root{--bg:#eef1f6;--panel:#fff;--ink:#141b26;--muted:#5b6b7e;--faint:#93a1b2;--hair:#e7ebf1;--line2:#d5dce4;
+   --accent:#1f6feb;--accent-d:#1857c0;--accent-s:#eaf1fd;--accent2:#2b7bb0;--good:#1f9d57;--good-s:#e6f6ec;
+   --warn:#d98a1f;--warn-s:#fdf3e2;--crit:#d64545;--crit-s:#fcebea;--purple:#7a4fd0;--purple-s:#f0eafb;
+   --side:#0f1b2d;--mono:"Cascadia Code","Consolas",ui-monospace,monospace;--sans:"Segoe UI Variable","Segoe UI","Malgun Gothic",system-ui,sans-serif;}
+ *{box-sizing:border-box;margin:0;padding:0}
+ body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5}
+ .app{display:flex;min-height:100vh}
+ .side{width:210px;flex:none;background:var(--side);color:#c3cfdd;display:flex;flex-direction:column;padding:15px 12px;position:sticky;top:0;height:100vh}
+ .brand{display:flex;align-items:center;gap:10px;padding:6px 8px 18px}
+ .brand .lg{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#2f80ed,#1f9d57);display:flex;align-items:center;justify-content:center;font-size:17px}
+ .brand b{font-size:15px;color:#fff;display:block;line-height:1.1} .brand span{font-size:10px;color:#7d8ea3;font-family:var(--mono)}
+ .nav{display:flex;flex-direction:column;gap:2px;margin-top:4px}
+ .nav a{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:9px;font-size:13.5px;color:#9fb0c4;text-decoration:none;cursor:pointer}
+ .nav a:hover{background:rgba(255,255,255,.05)} .nav a.on{background:rgba(47,128,237,.18);color:#fff;font-weight:600}
+ .nav a .ic{width:17px;text-align:center;font-size:15px}
+ .nav .grp{font-size:9.5px;font-family:var(--mono);color:#5f708a;text-transform:uppercase;letter-spacing:.1em;padding:14px 12px 5px}
+ .side .sfoot{margin-top:auto;font-size:10px;color:#5f708a;padding:10px 8px;font-family:var(--mono);line-height:1.6;border-top:1px solid rgba(255,255,255,.06)}
+ .side .sfoot .dot{color:var(--good)}
+ .main{flex:1;min-width:0;display:flex;flex-direction:column}
+ .top{height:58px;flex:none;background:var(--panel);border-bottom:1px solid var(--hair);display:flex;align-items:center;gap:14px;padding:0 22px;position:sticky;top:0;z-index:20}
+ .crumb{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:7px}
+ .crumb a{color:var(--muted);cursor:pointer;text-decoration:none} .crumb a:hover{color:var(--accent)} .crumb b{color:var(--ink)} .crumb .sep{color:var(--line2)}
+ .top .sp{flex:1}
+ .disc{display:flex;align-items:center;gap:9px} .disc.hide{display:none}
+ .disc .dl{font-size:10.5px;font-family:var(--mono);color:var(--faint);text-transform:uppercase}
+ .seg{display:inline-flex;background:#eef2f7;border-radius:9px;padding:3px}
+ .seg button{border:none;background:transparent;padding:6px 12px;border-radius:7px;font-size:12.5px;font-weight:700;cursor:pointer;color:var(--muted);font-family:var(--sans)}
+ .seg button .sn{font-family:var(--mono);font-size:9px;display:block;opacity:.7}
+ .seg button.on{background:#fff;color:var(--accent);box-shadow:0 1px 3px rgba(30,50,90,.14)}
+ .bell{font-size:16px;position:relative;cursor:pointer} .bell .d{position:absolute;top:-1px;right:-2px;width:7px;height:7px;background:var(--crit);border-radius:50%;border:1.5px solid #fff}
+ .av{width:31px;height:31px;border-radius:50%;background:var(--accent-s);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px}
+ .body{padding:20px 22px 44px;overflow:auto} .maxw{max-width:1120px;margin:0 auto}
+ /* 화면 라우팅 */
+ .screen{display:none;animation:fadein .35s ease} .screen.active{display:block}
+ @keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+ @keyframes fadeup{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+ h1.sct{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
+ .lead{color:var(--muted);font-size:13px;margin-bottom:16px}
+ .back{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--accent);background:#fff;border:1px solid var(--line2);border-radius:8px;padding:7px 13px;cursor:pointer;margin-bottom:14px} .back:hover{background:var(--accent-s)}
+ /* 대시보드 */
+ .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+ .kpi{background:var(--panel);border:1px solid var(--hair);border-radius:12px;padding:14px 15px} .kpi.crit{border-left:3px solid var(--crit)}
+ .kpi .k{font-size:11px;color:var(--faint);font-weight:600} .kpi .v{font-size:24px;font-weight:800;margin-top:5px} .kpi.crit .v{color:var(--crit)} .kpi .s{font-size:11px;color:var(--muted);margin-top:2px} .kpi.crit .s{color:var(--crit)}
+ .card{background:var(--panel);border:1px solid var(--hair);border-radius:12px;padding:15px 16px;margin-bottom:14px}
+ .card .ct{font-size:13px;font-weight:800;margin-bottom:3px;display:flex;align-items:center;gap:7px} .card .ct .r{margin-left:auto;font-size:10px;font-family:var(--mono);color:var(--crit)} .card .cs{font-size:11px;color:var(--faint);margin-bottom:9px}
+ .chart{width:100%;height:auto;display:block}
+ table{width:100%;border-collapse:collapse;font-size:13px} th,td{padding:9px 10px;border-bottom:1px solid var(--hair);text-align:left} th{font-size:10px;text-transform:uppercase;color:var(--faint);font-family:var(--mono)} tr:last-child td{border-bottom:none} td.mono{font-family:var(--mono)}
+ tr.lotrow{cursor:pointer;transition:.1s} tr.lotrow:hover td{background:var(--accent-s)}
+ .st{font-size:11px;font-weight:700;border-radius:20px;padding:3px 10px;white-space:nowrap} .st.c{background:var(--crit-s);color:var(--crit)} .st.w{background:var(--warn-s);color:var(--warn)}
+ .go{font-size:11.5px;font-weight:800;color:var(--accent)}
+ .hint{font-size:11.5px;color:var(--faint);margin-top:8px}
+ /* Wafer 선택 */
+ .wfhead{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px} .wfhead .lot{font-family:var(--mono);font-weight:800;font-size:16px}
+ .gal{display:grid;grid-template-columns:repeat(6,1fr);gap:11px}
+ .waf{border:2px solid var(--hair);border-radius:11px;padding:8px;text-align:center;cursor:pointer;background:#fff;transition:.13s}
+ .waf:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:0 6px 16px rgba(31,111,235,.16)}
+ .waf.bad{border-color:#f0c9c6;background:#fdf6f5} .waf .wm{width:100%;aspect-ratio:1;display:block;border-radius:5px} .waf .wl{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:5px} .waf .wy{font-family:var(--mono);font-size:11px;font-weight:800} .waf.bad .wy{color:var(--crit)}
+ /* 분석 실행바 */
+ .runbar{display:none;background:var(--panel);border:1px solid var(--hair);border-radius:12px;padding:16px 18px;margin-bottom:14px}
+ #sc-analysis.running .runbar{display:block}
+ .runbar .rt{font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:9px} .runbar .rt .spin{width:15px;height:15px;border:2.5px solid var(--accent-s);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite} @keyframes sp{to{transform:rotate(360deg)}}
+ .runtrack{height:7px;background:#eef2f7;border-radius:5px;margin-top:11px;overflow:hidden} .runfill{height:100%;width:0;background:linear-gradient(90deg,var(--accent),#3f86f2);border-radius:5px;transition:width .5s}
+ /* afterrun 게이팅 */
+ #sc-analysis.running .afterrun{display:none} #sc-analysis.done .afterrun{animation:fadeup .45s ease}
+ /* 결론 히어로 */
+ .hero{background:linear-gradient(120deg,#0f1b2d,#1a3050);border-radius:16px;padding:20px 24px;color:#eaf1f9;display:flex;gap:22px;align-items:center;flex-wrap:wrap;box-shadow:0 8px 26px rgba(15,27,45,.18);margin-bottom:16px}
+ .hero .vinfo{flex:1;min-width:280px}
+ .hero .vb{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10.5px;font-weight:800;background:rgba(31,157,87,.22);color:#7ee0a6;border-radius:6px;padding:3px 10px}
+ .hero h2{font-size:26px;font-weight:800;margin:11px 0 3px;color:#fff;letter-spacing:-.01em} .hero h2 .eq{color:#6fe3a0}
+ .hero .sub{font-size:13px;color:#9db4cf}
+ .hero .why{margin-top:13px;font-size:13px;color:#dce7f2;background:rgba(255,255,255,.06);border-radius:10px;padding:12px 15px;border-left:3px solid #6fe3a0;line-height:1.55} .hero .why b{color:#7ee0a6}
+ .hero .grounds{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px}
+ .hero .gd{background:rgba(255,255,255,.07);border-radius:8px;padding:6px 11px;font-size:11px} .hero .gd .gl{font-size:9px;color:#8ba3bd;font-family:var(--mono);text-transform:uppercase} .hero .gd .gv{font-weight:700;font-size:12px;color:#eaf1f9} .hero .gd.rej .gv{color:#f0b878}
+ .ring{position:relative;width:126px;height:126px} .ring .cv{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center} .ring .cv b{font-size:33px;font-weight:800;color:#fff;line-height:1} .ring .cv span{font-size:10px;color:#8ba3bd;font-family:var(--mono);margin-top:3px}
+ .hero .rt{display:flex;flex-direction:column;align-items:center;gap:9px} .hero .acts{display:flex;gap:8px}
+ .hbtn{font-size:12px;font-weight:700;border:none;border-radius:9px;padding:9px 15px;cursor:pointer} .hbtn.pri{background:#2f80ed;color:#fff} .hbtn.gh{background:rgba(255,255,255,.1);color:#eaf1f9}
+ .cols{display:grid;grid-template-columns:1.35fr 1fr;gap:15px;align-items:start}
+ .colhd{font-size:13px;font-weight:800;margin:0 0 10px;display:flex;align-items:center;gap:8px} .colhd .cnt{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-left:auto;font-weight:600}
+ /* 에이전트 */
+ .agent{background:var(--panel);border:1px solid var(--hair);border-radius:13px;margin-bottom:10px;overflow:hidden;transition:.15s}
+ .agent.running{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-s)} .agent.pending{opacity:.45} .agent.done{opacity:1}
+ .ah{display:flex;align-items:center;gap:12px;padding:12px 15px;cursor:pointer}
+ .ah .ic{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;flex:none;background:var(--accent-s)} .ah .ic.p{background:var(--purple-s)} .ah .ic.w{background:var(--warn-s)} .ah .ic.c{background:var(--crit-s)}
+ .ah .who .an{font-weight:800;font-size:14px} .ah .who .ar{font-size:11px;color:var(--faint);font-family:var(--mono)}
+ .ah .stat{margin-left:auto;display:flex;align-items:center;gap:9px}
+ .badge{font-size:9.5px;font-weight:800;border-radius:5px;padding:2px 8px;font-family:var(--mono)} .badge.ok{background:var(--good-s);color:var(--good)} .badge.rej{background:var(--warn-s);color:var(--warn)} .badge.run{background:var(--accent-s);color:var(--accent)}
+ .ah .caret{color:var(--faint);font-size:12px;transition:.2s} .agent.open .ah .caret{transform:rotate(90deg)}
+ .ab{padding:0 15px 14px;display:none} .agent.open .ab{display:block}
+ .out1{font-size:13px;background:#f7f9fc;border-radius:9px;padding:10px 13px} .out1 b{color:var(--accent)}
+ .io{display:flex;gap:7px;margin-top:9px;flex-wrap:wrap} .io .k{font-family:var(--mono);font-size:11px;background:#eef2f7;border-radius:6px;padding:3px 9px;color:var(--muted)}
+ .trace{margin-top:11px;border-top:1px dashed var(--hair);padding-top:10px} .trace .tl{font-size:10px;font-family:var(--mono);color:var(--purple);text-transform:uppercase;font-weight:800;margin-bottom:7px;letter-spacing:.05em}
+ .think{position:relative;padding:5px 0 5px 22px;font-size:12.5px;color:#3a4757} .think::before{content:"↳";position:absolute;left:5px;top:5px;color:var(--faint)} .think b{color:var(--ink)} .think .cite{font-family:var(--mono);font-size:10px;color:var(--accent)}
+ .taorow{display:grid;grid-template-columns:62px 1fr;gap:9px;align-items:start;margin:6px 0;font-size:12.5px}
+ .taorow .lab{font-family:var(--mono);font-size:9px;font-weight:800;border-radius:5px;padding:3px 0;text-align:center;letter-spacing:.02em}
+ .taorow .lab.t{background:var(--warn-s);color:var(--warn)} .taorow .lab.a{background:var(--accent-s);color:var(--accent)} .taorow .lab.o{background:var(--good-s);color:var(--good)}
+ .taorow .txt{color:#3a4757} .taorow .txt b{color:var(--ink)} .taorow .txt .cite{font-family:var(--mono);font-size:10px;color:var(--accent)}
+ .hyp{display:grid;grid-template-columns:150px 1fr 44px;gap:9px;align-items:center;margin:6px 0;font-size:12px} .hyp .track{background:#eef2f6;border-radius:5px;height:15px;overflow:hidden} .hyp .fill{height:100%;background:var(--accent2)} .hyp .fill.top{background:var(--good)} .hyp .pv{font-family:var(--mono);font-size:11px;text-align:right;font-weight:700} .hyp .nm{display:flex;align-items:center;gap:5px} .flag{font-size:8.5px;font-weight:800;border-radius:4px;padding:1px 5px} .flag.win{background:var(--good-s);color:var(--good)} .flag.trap{background:var(--warn-s);color:var(--warn)}
+ .agent table{margin-top:8px;font-size:12px} .agent th,.agent td{padding:6px 8px} tr.cand td{background:#fff7e6;font-weight:600}
+ .chip{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700} .chip.conf{background:var(--good-s);color:var(--good)} .chip.rej{background:var(--warn-s);color:var(--warn)}
+ .audit{margin-top:10px;background:#0f1b2d;border-radius:10px;padding:11px 13px;font-family:var(--mono);font-size:11px;color:#c8d6e8;line-height:1.7;overflow-x:auto} .audit .cmt{color:#5f7591} .audit .ky{color:#7fb2f0} .audit .st{color:#7ad19a} .audit .wn{color:#e3b15a}
+ .evside{position:sticky;top:74px}
+ .kg{display:flex;align-items:center;flex-wrap:wrap;font-size:11.5px;margin-top:6px} .kgn{background:#fff;border:1.5px solid var(--accent);border-radius:9px;padding:6px 10px;text-align:center;font-weight:700} .kgn small{display:block;font-size:9px;color:var(--faint);font-weight:500;font-family:var(--mono)} .kgn.d{border-color:var(--crit)} .kgn.e{border-color:var(--good)} .kga{color:var(--faint);padding:0 5px;font-size:15px}
+ .cites{margin-top:11px;font-size:11px;color:var(--muted);line-height:1.7} .cites .s{font-family:var(--mono);color:var(--accent)}
+ .recrow{display:grid;grid-template-columns:repeat(3,1fr);gap:11px} .rec{background:var(--panel);border:1px solid var(--hair);border-top:3px solid var(--accent);border-radius:12px;padding:13px 15px} .rec.p1{border-top-color:var(--crit)} .rec.p2{border-top-color:var(--warn)} .rec .p{font-family:var(--mono);font-size:9.5px;font-weight:800;color:var(--accent)} .rec.p1 .p{color:var(--crit)} .rec.p2 .p{color:var(--warn)} .rec .rt2{font-weight:800;font-size:13.5px;margin:4px 0 3px} .rec .rd{font-size:12px;color:var(--muted)} .rec .rb{margin-top:9px;font-size:11.5px;font-weight:700;color:var(--accent);cursor:pointer}
+ .designnote{margin-top:20px;background:var(--panel);border:1px solid var(--hair);border-radius:13px;overflow:hidden} .dnh{display:flex;align-items:center;gap:9px;padding:13px 16px;cursor:pointer;font-weight:800;font-size:13px} .dnh .caret{margin-left:auto;color:var(--faint);transition:.2s} .designnote.open .dnh .caret{transform:rotate(90deg)} .dnb{display:none;padding:0 16px 16px} .designnote.open .dnb{display:block}
+ .matrix{width:100%;border-collapse:collapse;font-size:12px;border:1px solid var(--hair);border-radius:10px;overflow:hidden} .matrix th,.matrix td{border-bottom:1px solid var(--hair);border-right:1px solid var(--hair);padding:8px 10px;text-align:left;vertical-align:top} .matrix th{background:#f4f7fa;font-size:10px;text-transform:uppercase;color:var(--muted)} .matrix td:last-child,.matrix th:last-child{border-right:none} .matrix td.n{font-weight:800;white-space:nowrap} .mono2{font-family:var(--mono);font-size:10px} .yes{color:var(--good);font-weight:800} .no{color:var(--faint)} .part{color:var(--warn);font-weight:700}
+ .refs{font-size:11.5px;margin-top:14px} .refs li{margin:5px 0;color:var(--muted);line-height:1.5} .refs b{color:var(--ink)} .refs .src{font-family:var(--mono);font-size:10px;color:var(--accent)}
+ .note{background:#f4f8fc;border:1px solid #cfe0f0;border-radius:9px;padding:10px 13px;font-size:12px;margin-top:12px}.note b{color:var(--accent)}
+ /* 공개수준 3예시 게이팅 */
+ .app.ex1 #timeline,.app.ex1 #evcol{display:none!important}
+ .app.ex1 .cols{grid-template-columns:1fr}
+ .app.ex1 .lv2,.app.ex1 .lv3,.app.ex1 .lv4,.app.ex2 .lv3,.app.ex2 .lv4{display:none!important}
+ #agentSummary{display:none} .app.ex1 #agentSummary{display:block}
+ .exnote{background:#fff4e6;border:1px solid #f0d9b5;border-radius:10px;padding:11px 14px;font-size:12.5px;margin-bottom:14px} .exnote b{color:var(--warn)}
+ /* 리포트/설정/KG */
+ .barrow{display:grid;grid-template-columns:118px 1fr 58px;gap:9px;align-items:center;margin:6px 0;font-size:12.5px} .barrow .bl{color:var(--muted);text-align:right;font-size:11.5px} .barrow .bt2{background:#eef2f6;border-radius:5px;height:16px;overflow:hidden} .barrow .bf{height:100%;background:var(--accent2);border-radius:5px} .barrow .bf.hi{background:var(--crit)} .barrow .bv{font-family:var(--mono);font-size:11px;font-weight:700;text-align:right}
+ .setrow{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--hair)} .setrow:last-child{border:none} .setrow .sl{font-weight:700;font-size:13px} .setrow .sd{font-size:11.5px;color:var(--muted)} .setrow .sc2{margin-left:auto;display:flex;align-items:center;gap:8px}
+ .switch{width:38px;height:22px;border-radius:20px;background:var(--good);position:relative;cursor:pointer;flex:none} .switch.off{background:#cbd3dd} .switch i{position:absolute;top:2px;left:18px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.15s} .switch.off i{left:2px}
+ .field{font-family:var(--mono);font-size:12px;border:1px solid var(--line2);border-radius:7px;padding:5px 9px;background:#fff;color:var(--ink);width:62px;text-align:center}
+ .tag2{font-size:10px;font-family:var(--mono);font-weight:700;border-radius:5px;padding:2px 7px;background:var(--accent-s);color:var(--accent)} .tag2.g{background:var(--good-s);color:var(--good)}
+ .kgsel{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px} .kgsel button{font-size:12px;font-weight:700;border:1px solid var(--line2);background:#fff;border-radius:20px;padding:5px 12px;cursor:pointer;color:var(--muted)} .kgsel button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+ .kgpath{background:#fff;border:1px solid var(--hair);border-radius:11px;padding:13px 15px;margin-bottom:10px} .kgflow{display:flex;align-items:center;flex-wrap:wrap;gap:0;font-size:12px} .kgflow .n{border-radius:9px;padding:7px 11px;text-align:center;font-weight:700;border:1.5px solid} .kgflow .n.def{border-color:var(--crit);background:var(--crit-s)} .kgflow .n.proc{border-color:var(--accent);background:var(--accent-s)} .kgflow .n.phys{border-color:var(--good);background:var(--good-s)} .kgflow .n small{display:block;font-size:9px;color:var(--faint);font-weight:500;font-family:var(--mono)} .kgflow .ar{color:var(--faint);padding:0 7px;font-size:14px}
+ .confbar{height:6px;background:#eef2f6;border-radius:4px;overflow:hidden;margin-top:8px} .conffill{height:100%;background:var(--good)}
+ #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#0f1b2d;color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.28);opacity:0;pointer-events:none;transition:.25s;z-index:100} #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+ input[type=range]{width:150px;accent-color:var(--accent);vertical-align:middle} .tag2{cursor:pointer} .tag2.off{background:#eef2f6;color:var(--faint);text-decoration:line-through}
+ .savebtn{font-size:13px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:9px;padding:10px 20px;cursor:pointer} .savebtn:hover{background:var(--accent-d)}
+ .minibtn{font-size:11.5px;font-weight:700;color:var(--accent);background:#fff;border:1px solid var(--line2);border-radius:7px;padding:5px 11px;cursor:pointer} .minibtn:hover{background:var(--accent-s)}
+ @media(max-width:1000px){.side{display:none}.cols{grid-template-columns:1fr}.evside{position:static}.recrow{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}.gal{grid-template-columns:repeat(4,1fr)}.disc .dl{display:none}.kgflow{font-size:11px}}
+</style>
+
+<div class="app L2" id="app">
+  <aside class="side">
+    <div class="brand"><div class="lg">◎</div><div><b>YieldWatch</b><span>RCA Agent</span></div></div>
+    <nav class="nav">
+      <a onclick="nav('dash')" id="nv-dash"><span class="ic">📊</span> 대시보드</a>
+      <a onclick="nav('dash')"><span class="ic">⚠️</span> 이상 Lot</a>
+      <a onclick="nav('fdc')"><span class="ic">🩺</span> FDC 모니터</a>
+      <div class="grp">분석</div>
+      <a id="nv-an" class="on" onclick="gotoAnalysis()"><span class="ic">🧠</span> AI 원인분석</a>
+      <a onclick="nav('report')"><span class="ic">📄</span> 리포트</a>
+      <div class="grp">시스템</div>
+      <a onclick="nav('kg')"><span class="ic">🕸️</span> 지식그래프</a>
+      <a onclick="nav('settings')"><span class="ic">⚙️</span> 설정</a>
+    </nav>
+    <div class="sfoot"><span class="dot">●</span> fab.db 연결됨<br>WM-811K × secsgem-mcp<br>모델 v1.3 · 정답일치 10/10</div>
+  </aside>
+
+  <div class="main">
+    <header class="top">
+      <div class="crumb" id="crumb"></div>
+      <div class="sp"></div>
+      <div class="disc hide" id="discbar">
+        <span class="dl">사용자 공개 예시</span>
+        <div class="seg">
+          <button data-e="1" onclick="setEx(1)">예시1<span class="sn">최소</span></button>
+          <button data-e="2" onclick="setEx(2)">예시2<span class="sn">균형</span></button>
+          <button data-e="3" onclick="setEx(3)">예시3<span class="sn">전체</span></button>
+        </div>
+      </div>
+      <div class="bell">🔔<span class="d"></span></div>
+      <div class="av">KT</div>
+    </header>
+
+    <div class="body"><div class="maxw">
+
+      <!-- ===== 화면 1: 대시보드 ===== -->
+      <section class="screen active" id="sc-dash">
+        <h1 class="sct">📊 수율 모니터링 대시보드</h1>
+        <p class="lead">이상 Lot을 클릭하면 → Wafer 선택 → AI 원인분석으로 이동합니다. <b style="color:var(--accent)">아래 표의 Lot 행을 눌러보세요.</b></p>
+        <div class="kpis">
+          <div class="kpi crit"><div class="k">Die 수율 (현재)</div><div class="v">92.3%</div><div class="s">▼ 목표 95% −2.7%p</div></div>
+          <div class="kpi"><div class="k">EDS bin 수율</div><div class="v">90.1%</div><div class="s" style="color:var(--muted)">edge-fail 급증</div></div>
+          <div class="kpi crit"><div class="k">이상 Lot</div><div class="v">3건</div><div class="s">최근 24h 신규 2</div></div>
+          <div class="kpi"><div class="k">주 결함</div><div class="v" style="font-size:16px">Edge-Ring</div><div class="s" style="color:var(--muted)">전체 34%</div></div>
+        </div>
+        <div class="card"><div class="ct">📈 수율 추이 <span class="r">이상 구간 ▲</span></div><div class="cs">fab 일간 Die 수율 · 이상 구간 자동 표시</div>
+          <svg viewBox="0 0 900 150" class="chart" preserveAspectRatio="none" style="height:120px">
+            <rect x="640" y="8" width="260" height="134" fill="#d64545" opacity="0.06"/>
+            <line x1="0" y1="42" x2="900" y2="42" stroke="#d98a1f" stroke-dasharray="6 4" stroke-width="1"/><text x="6" y="37" font-size="10" fill="#d98a1f" font-family="monospace">목표 95%</text>
+            <polyline fill="none" stroke="#1f6feb" stroke-width="2.2" points="10,48 70,44 130,50 190,45 250,42 310,47 370,44 430,49 490,45 550,52 610,50 660,72 710,100 760,120 810,124 860,120 895,123"/>
+            <circle cx="710" cy="100" r="5" fill="#d64545"/><text x="672" y="92" font-size="10.5" fill="#d64545" font-family="'Malgun Gothic'">← 이상 시작(변화점)</text>
+          </svg>
+        </div>
+        <div class="card"><div class="ct">⚠ 이상 Lot 목록 <span class="r">클릭 → 분석</span></div><div class="cs">문제 Lot·Wafer 확인 → AI 원인분석 진입</div>
+          <table>
+            <tr><th>Lot</th><th>Wafer(불량)</th><th>주 결함</th><th>Die수율</th><th>상태</th><th>발생</th><th></th></tr>
+            <tr class="lotrow" onclick="pickLot('LOT2381')"><td class="mono">LOT2381</td><td class="mono">25 (6)</td><td>Edge-Ring</td><td class="mono">87.2%</td><td><span class="st c">위험</span></td><td class="mono">10:24</td><td class="go">열기 ▶</td></tr>
+            <tr class="lotrow" onclick="pickLot('LOT2379')"><td class="mono">LOT2379</td><td class="mono">24 (4)</td><td>Center</td><td class="mono">90.1%</td><td><span class="st w">주의</span></td><td class="mono">09:47</td><td class="go">열기 ▶</td></tr>
+            <tr class="lotrow" onclick="pickLot('LOT2375')"><td class="mono">LOT2375</td><td class="mono">25 (3)</td><td>Scratch</td><td class="mono">91.8%</td><td><span class="st w">주의</span></td><td class="mono">08:12</td><td class="go">열기 ▶</td></tr>
+          </table>
+          <div class="hint">💡 프로토타입 — Lot 행 클릭 시 실제로 Wafer 선택 화면으로 전환됩니다.</div>
+        </div>
+      </section>
+
+      <!-- ===== 화면 2: Wafer 선택 ===== -->
+      <section class="screen" id="sc-wafer">
+        <button class="back" onclick="nav('dash')">← 이상 Lot 목록</button>
+        <div class="wfhead"><span class="lot" id="wf-lot">LOT2381</span><span class="st c">Die수율 87.2%</span><span style="font-size:12px;color:var(--faint);font-family:var(--mono)">불량 = 붉은 테두리 · Wafer 클릭 → AI 분석</span></div>
+        <div class="card"><div class="ct">🔬 Wafer 선택 — 분석할 불량 웨이퍼를 고르세요 <span class="r">클릭 → 분석 실행</span></div>
+          <div class="gal" id="gal"></div>
+        </div>
+      </section>
+
+      <!-- ===== 화면 보조: FDC 모니터 ===== -->
+      <section class="screen" id="sc-fdc">
+        <h1 class="sct">🩺 FDC 모니터 — 장비 실시간 감시</h1>
+        <p class="lead">Fault Detection &amp; Classification — 센서 telemetry를 규격·학습된 정상범위와 비교해 이상을 조기 포착합니다. <span style="color:var(--faint)">[INFICON FabGuard 개념]</span></p>
+        <div class="card"><div class="ct">장비 파라미터 상태 <span class="r" id="fdccount">OOS 1건 ▲</span></div>
+          <table><thead><tr><th>장비</th><th>파라미터</th><th>실측</th><th>규격</th><th>상태</th></tr></thead><tbody id="fdcbody"></tbody></table>
+          <div class="hint">💡 규격은 <b>설정 › FDC 임계</b>에서 조절 — 값을 바꾸면 이 표의 OOS 판정이 <b>즉시</b> 바뀝니다. ETCH-03 OOS → AI 원인분석에서 진범 확정.</div>
+        </div>
+      </section>
+      <!-- ===== 리포트 ===== -->
+      <section class="screen" id="sc-report">
+        <h1 class="sct">📄 수율 · RCA 배치 리포트</h1>
+        <p class="lead">WM-811K EDA + fab.db RCA 결과 요약. <span style="color:var(--faint);font-family:var(--mono);font-size:11.5px">source: eda_out/yield_by_class · knowledge_graph.json · ground_truth(10)</span></p>
+        <div class="kpis">
+          <div class="kpi"><div class="k">분석 사건</div><div class="v">10건</div><div class="s">RCA 배치</div></div>
+          <div class="kpi"><div class="k">정답 일치</div><div class="v" style="color:var(--good)">10/10</div><div class="s" style="color:var(--good)">ground_truth 대조</div></div>
+          <div class="kpi crit"><div class="k">최고 수율타격</div><div class="v" style="font-size:16px">Near-full</div><div class="s">83.7%p (치명)</div></div>
+          <div class="kpi"><div class="k">최다 결함</div><div class="v" style="font-size:16px">Edge-Ring</div><div class="s" style="color:var(--muted)">9,680건</div></div>
+        </div>
+        <div class="cols" style="align-items:start">
+          <div>
+            <div class="card"><div class="ct">📊 결함별 수율타격 우선순위 <span class="r" style="color:var(--muted)">yield_loss_pp</span></div><div class="cs">none 대비 수율 손실 — 대응 우선순위 (EDA §2.5)</div>
+              <div class="barrow"><span class="bl">Near-full</span><div class="bt2"><div class="bf hi" style="width:100%"></div></div><span class="bv">83.7</span></div>
+              <div class="barrow"><span class="bl">Donut</span><div class="bt2"><div class="bf hi" style="width:35%"></div></div><span class="bv">29.3</span></div>
+              <div class="barrow"><span class="bl">Random</span><div class="bt2"><div class="bf" style="width:18.8%"></div></div><span class="bv">15.8</span></div>
+              <div class="barrow"><span class="bl">Center</span><div class="bt2"><div class="bf" style="width:17.7%"></div></div><span class="bv">14.8</span></div>
+              <div class="barrow"><span class="bl">Scratch</span><div class="bt2"><div class="bf" style="width:6.7%"></div></div><span class="bv">5.6</span></div>
+              <div class="barrow"><span class="bl">Edge-Ring</span><div class="bt2"><div class="bf" style="width:6.2%"></div></div><span class="bv">5.2</span></div>
+              <div class="barrow"><span class="bl">Loc</span><div class="bt2"><div class="bf" style="width:6.1%"></div></div><span class="bv">5.1</span></div>
+              <div class="barrow"><span class="bl">Edge-Loc</span><div class="bt2"><div class="bf" style="width:4.3%"></div></div><span class="bv">3.6</span></div>
+            </div>
+            <div class="card"><div class="ct">🧱 결함 빈도 분포 <span class="r" style="color:var(--muted)">WM-811K</span></div><div class="cs">라벨 빈도 — Edge-Ring 최다, 극불균형(→ macro-F1 평가)</div>
+              <div class="barrow"><span class="bl">Edge-Ring</span><div class="bt2"><div class="bf" style="width:100%"></div></div><span class="bv">9,680</span></div>
+              <div class="barrow"><span class="bl">Edge-Loc</span><div class="bt2"><div class="bf" style="width:53.6%"></div></div><span class="bv">5,189</span></div>
+              <div class="barrow"><span class="bl">Center</span><div class="bt2"><div class="bf" style="width:44.4%"></div></div><span class="bv">4,294</span></div>
+              <div class="barrow"><span class="bl">Loc</span><div class="bt2"><div class="bf" style="width:37.1%"></div></div><span class="bv">3,593</span></div>
+              <div class="barrow"><span class="bl">Scratch</span><div class="bt2"><div class="bf" style="width:12.3%"></div></div><span class="bv">1,193</span></div>
+              <div class="barrow"><span class="bl">Random</span><div class="bt2"><div class="bf" style="width:8.9%"></div></div><span class="bv">866</span></div>
+              <div class="barrow"><span class="bl">Donut</span><div class="bt2"><div class="bf" style="width:5.7%"></div></div><span class="bv">555</span></div>
+              <div class="barrow"><span class="bl">Near-full</span><div class="bt2"><div class="bf" style="width:1.5%"></div></div><span class="bv">149</span></div>
+            </div>
+          </div>
+          <div>
+            <div class="card"><div class="ct">🧠 최근 RCA 사건 → 진범 <span class="r">10/10 ✓</span></div>
+              <table>
+                <tr><th>사건</th><th>결함</th><th>진범</th><th>신뢰</th><th>판정</th></tr>
+                <tr><td class="mono">EVT-2381</td><td>Edge-Ring</td><td class="mono">ETCH-03</td><td class="mono">92%</td><td><span class="st" style="background:var(--good-s);color:var(--good)">확정</span></td></tr>
+                <tr><td class="mono">EVT-2379</td><td>Center</td><td class="mono">DEPO-02</td><td class="mono">88%</td><td><span class="st" style="background:var(--good-s);color:var(--good)">확정</span></td></tr>
+                <tr><td class="mono">EVT-2375</td><td>Scratch</td><td class="mono">CMP-01</td><td class="mono">90%</td><td><span class="st" style="background:var(--good-s);color:var(--good)">확정</span></td></tr>
+                <tr><td class="mono">EVT-2402</td><td>Near-full</td><td class="mono">설비 오작동</td><td class="mono">95%</td><td><span class="st" style="background:var(--good-s);color:var(--good)">확정</span></td></tr>
+                <tr><td class="mono">EVT-2410</td><td>Random</td><td class="mono" style="color:var(--faint)">환경/전반</td><td class="mono">61%</td><td><span class="st w">HITL</span></td></tr>
+              </table>
+              <div class="hint">💡 매칭불가(P7·낮은 신뢰)는 억지 결론 대신 <b>사람 판단(HITL)</b>이 정답.</div>
+            </div>
+            <div class="card"><div class="ct">🔀 혼동쌍 경고 <span class="r" style="color:var(--muted)">confusion</span></div>
+              <table>
+                <tr><th>헷갈리는 결함쌍</th><th>조치</th></tr>
+                <tr><td class="mono">Edge-Ring ↔ Edge-Loc</td><td><span class="st w">이중확인</span></td></tr>
+                <tr><td class="mono">Center ↔ Donut</td><td><span class="st" style="background:var(--good-s);color:var(--good)">양호</span></td></tr>
+                <tr><td class="mono">Loc ↔ Edge-Loc</td><td><span class="st" style="background:var(--good-s);color:var(--good)">양호</span></td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== 지식그래프 ===== -->
+      <section class="screen" id="sc-kg">
+        <h1 class="sct">🕸️ 결함 지식그래프 (BWDKG)</h1>
+        <p class="lead">결함 → 원인공정 → 물리원인. confidence = 반도체 도메인지식 + EDA 공간시그니처. <span style="color:var(--faint);font-family:var(--mono);font-size:11.5px">knowledge_graph.json · GraphRAG/LightRAG 검색 대상</span></p>
+        <div class="card">
+          <div class="cs">결함을 선택하면 인과 경로가 펼쳐집니다 (②지식검색 에이전트가 이 그래프를 3-hop 탐색).</div>
+          <div class="kgsel" id="kgsel"></div>
+          <div id="kgview"></div>
+        </div>
+      </section>
+
+      <!-- ===== 설정 ===== -->
+      <section class="screen" id="sc-settings">
+        <h1 class="sct">⚙️ 설정</h1>
+        <p class="lead"><b style="color:var(--accent)">실제로 작동합니다</b> — 토글을 켜고/끄고, FDC 규격을 바꾸면 <b>FDC 모니터 판정이 즉시</b> 바뀌고, 기본 공개수준을 바꾸면 분석 화면에 바로 적용됩니다. <span style="color:var(--faint);font-family:var(--mono);font-size:11px">레퍼런스 기반 기본값</span></p>
+        <div class="cols" style="align-items:start">
+          <div>
+            <!-- 판독 모델 -->
+            <div class="card"><div class="ct">🤖 판독 모델 (Vision)</div>
+              <div class="setrow"><div><div class="sl">Cosmos Reason 1.7B <span class="tag2">VLM</span></div><div class="sd">웨이퍼 macro 분류 · 자연어 설명형 출력</div></div><div class="sc2"><span class="tag2 g">&gt;96%</span><span class="switch" onclick="flipSw(this)"><i></i></span></div></div>
+              <div class="setrow"><div><div class="sl">NV-DINOv2 <span class="tag2">VFM</span></div><div class="sd">die micro 분류 · 유사케이스 auto-labeling</div></div><div class="sc2"><span class="tag2 g">98.5%</span><span class="switch" onclick="flipSw(this)"><i></i></span></div></div>
+              <div class="setrow"><div><div class="sl">WaferSAGE — Qwen3-VL-4B <span class="tag2">온프레미스</span></div><div class="sd">경량 VQA · fab 데이터 외부반출 0</div></div><div class="sc2"><span class="tag2 g">on-prem</span><span class="switch" onclick="flipSw(this)"><i></i></span></div></div>
+            </div>
+            <!-- RCA 파이프라인 -->
+            <div class="card"><div class="ct">🧠 RCA 파이프라인</div>
+              <div class="setrow"><div><div class="sl">활성 에이전트</div><div class="sd">클릭해서 켜고/끄기 (파이프라인 구성)</div></div></div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin:-4px 0 10px"><span class="tag2" onclick="flipTag(this)">①판독</span><span class="tag2" onclick="flipTag(this)">②검색</span><span class="tag2" onclick="flipTag(this)">③가설</span><span class="tag2" onclick="flipTag(this)">④검증</span><span class="tag2" onclick="flipTag(this)">⑤제안</span></div>
+              <div class="setrow"><div><div class="sl">자동확정 신뢰도 임계</div><div class="sd">이 값 미만이면 <b>HITL(사람 판단)</b>로 전환</div></div><div class="sc2"><input type="range" min="70" max="99" value="85" oninput="setConf(this.value)"><span id="confval" style="font-family:var(--mono);font-weight:700;font-size:12px;width:34px">85%</span></div></div>
+              <div class="setrow"><div><div class="sl">Critic 반론 라운드</div><div class="sd">함정 기각 재검증 횟수</div></div><div class="sc2"><input class="field" value="2" style="width:44px" onchange="toast('Critic 라운드 = '+this.value)"></div></div>
+              <div class="setrow"><div><div class="sl">매칭불가 시 HITL 전환</div><div class="sd">억지 결론 대신 사람에게 (P7)</div></div><div class="sc2"><span class="switch" onclick="flipSw(this)"><i></i></span></div></div>
+            </div>
+            <!-- 지식그래프/RAG -->
+            <div class="card"><div class="ct">🕸️ 지식그래프 / RAG</div>
+              <div class="setrow"><div><div class="sl">confidence 최소 임계</div><div class="sd">이 미만 경로는 보조가설로 강등/제외</div></div><div class="sc2"><input class="field" value="0.40" style="width:52px" onchange="toast('KG confidence 컷 = '+this.value)"></div></div>
+              <div class="setrow"><div><div class="sl">검색 hop 수</div><div class="sd">결함 → 원인 → 물리 (기본 3-hop)</div></div><div class="sc2"><input class="field" value="3" style="width:44px" onchange="toast('검색 hop = '+this.value)"></div></div>
+              <div class="setrow"><div><div class="sl">검색 소스</div><div class="sd">클릭해서 포함/제외</div></div><div class="sc2" style="flex-wrap:wrap;justify-content:flex-end"><span class="tag2" onclick="flipTag(this)">mapping_table</span><span class="tag2" onclick="flipTag(this)">Minitab 패턴</span><span class="tag2" onclick="flipTag(this)">BWDKG</span></div></div>
+              <div class="setrow"><div><div class="sl">confidence 재보정</div><div class="sd">실측 이력데이터로 엣지 가중 갱신</div></div><div class="sc2"><button class="minibtn" onclick="toast('▶ 재보정 실행됨 (데모)')">재보정 실행</button></div></div>
+            </div>
+          </div>
+          <div>
+            <!-- FDC 임계 (연동) -->
+            <div class="card"><div class="ct">🩺 FDC 임계 (Fault Detection) <span class="r" style="color:var(--accent)">모니터 연동 ✓</span></div>
+              <div class="setrow"><div><div class="sl">ETCH-03 · rf_power</div><div class="sd">실측 <b class="mono" style="color:var(--crit)">2680W</b> · 식각 RF 정상범위</div></div><div class="sc2"><input class="field" value="2400" onchange="setFDC('ETCH-03','lo',this.value)"> – <input class="field" value="2600" onchange="setFDC('ETCH-03','hi',this.value)"> W</div></div>
+              <div class="setrow"><div><div class="sl">RTP-02 · edge_temp</div><div class="sd">실측 <b class="mono">421°C</b> · 급속열처리 에지 온도</div></div><div class="sc2"><input class="field" value="410" onchange="setFDC('RTP-02','lo',this.value)"> – <input class="field" value="430" onchange="setFDC('RTP-02','hi',this.value)"> °C</div></div>
+              <div class="setrow"><div><div class="sl">DEPO-02 · chamber_p</div><div class="sd">실측 <b class="mono">3.1T</b> · 증착 챔버 압력</div></div><div class="sc2"><input class="field" value="2.9" onchange="setFDC('DEPO-02','lo',this.value)"> – <input class="field" value="3.3" onchange="setFDC('DEPO-02','hi',this.value)"> T</div></div>
+              <div class="setrow"><div><div class="sl">학습된 정상범위(SmartFDC)</div><div class="sd">고정 규격 대신 동적 학습 벤치마크(INFICON)</div></div><div class="sc2"><span class="switch" onclick="flipSw(this)"><i></i></span></div></div>
+              <div class="hint">💡 위 상한값을 <b>2700</b>으로 바꾸고 <b>FDC 모니터</b>를 열어보세요 — ETCH-03이 <b>정상</b>으로 바뀝니다.</div>
+            </div>
+            <!-- 공개수준/기밀 -->
+            <div class="card"><div class="ct">🔐 공개수준 · 기밀 보호</div>
+              <div class="setrow"><div><div class="sl">기본 사용자 공개수준</div><div class="sd">역할적응형 — 클릭 시 즉시 적용</div></div><div class="sc2" id="exdefault"><button class="tag2" data-e="1" onclick="setDefaultEx(1)">예시1</button><button class="tag2" data-e="2" onclick="setDefaultEx(2)">예시2</button><button class="tag2" data-e="3" onclick="setDefaultEx(3)">예시3</button></div></div>
+              <div class="setrow"><div><div class="sl">마스킹 대상 (기밀)</div><div class="sd">외부/협력사에게 가릴 항목</div></div><div class="sc2" style="flex-wrap:wrap;justify-content:flex-end"><span class="tag2" onclick="flipTag(this)">장비 ID</span><span class="tag2" onclick="flipTag(this)">규격값</span><span class="tag2" onclick="flipTag(this)">사내문헌</span></div></div>
+              <div class="setrow"><div><div class="sl">온프레미스 강제</div><div class="sd">데이터 외부반출 차단 (WaferSAGE)</div></div><div class="sc2"><span class="switch" onclick="flipSw(this)"><i></i></span></div></div>
+            </div>
+            <!-- 알림/자동화 -->
+            <div class="card"><div class="ct">🔔 알림 · 자동화</div>
+              <div class="setrow"><div><div class="sl">이상 Lot 발생 시 자동 RCA</div><div class="sd">신규 이상 감지 → 분석 자동 실행</div></div><div class="sc2"><span class="switch" onclick="flipSw(this)"><i></i></span></div></div>
+              <div class="setrow"><div><div class="sl">FDC OOS 알람</div><div class="sd">규격 이탈 즉시 경보</div></div><div class="sc2"><span class="switch" onclick="flipSw(this)"><i></i></span></div></div>
+              <div class="setrow"><div><div class="sl">알림 채널</div><div class="sd">경보 수신 경로</div></div><div class="sc2"><span class="tag2" onclick="flipTag(this)">이메일</span><span class="tag2" onclick="flipTag(this)">MES</span><span class="tag2 off" onclick="flipTag(this)">SMS</span></div></div>
+            </div>
+            <!-- 데이터 연결 -->
+            <div class="card"><div class="ct">🗄 데이터 연결</div>
+              <div class="setrow"><div><div class="sl">WM-811K (LSWMD)</div><div class="sd">811,457 웨이퍼맵 · 결함 8종</div></div><div class="sc2"><span class="tag2 g">● 연결됨</span></div></div>
+              <div class="setrow"><div><div class="sl">fab.db (secsgem-mcp)</div><div class="sd">telemetry · lot · alarm · maintenance</div></div><div class="sc2"><span class="tag2 g">● 연결됨</span></div></div>
+              <div class="setrow"><div><div class="sl">ground_truth</div><div class="sd">정답카드 10건 (채점·감사용)</div></div><div class="sc2"><span class="tag2 g">● 연결됨</span></div></div>
+              <div class="setrow"><div><div class="sl">지식그래프 BWDKG</div><div class="sd">8결함 · 원인공정 · confidence</div></div><div class="sc2"><span class="tag2 g">● 로드됨</span></div></div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:14px;display:flex;gap:12px;align-items:center"><button class="savebtn" onclick="saveCfg()">설정 저장</button><span style="font-size:12px;color:var(--muted)">변경은 이 세션에 즉시 적용됩니다.</span></div>
+      </section>
+
+      <!-- ===== 화면 3: AI 원인분석 ===== -->
+      <section class="screen" id="sc-analysis">
+        <button class="back" onclick="nav('wafer')">← Wafer 선택</button>
+        <div class="afterrun exnote">🔐 <b>사용자 공개 예시</b> — 상단(또는 아래)에서 <b>예시1 최소 · 예시2 균형 · 예시3 전체</b>를 눌러 "이 분석을 사용자에게 어디까지 보여줄지" 3가지를 비교하세요. 현재: <b id="exnow">예시2 · 균형 공개</b>
+          <div style="display:inline-flex;gap:6px;margin-left:10px" class="seg"><button data-e="1" onclick="setEx(1)">예시1</button><button data-e="2" onclick="setEx(2)">예시2</button><button data-e="3" onclick="setEx(3)">예시3</button></div>
+        </div>
+
+        <!-- 실행 진행바 (분석 중에만) -->
+        <div class="runbar">
+          <div class="rt"><span class="spin"></span><span id="runtxt">AI 에이전트 분석 실행 중…</span></div>
+          <div class="runtrack"><div class="runfill" id="runfill"></div></div>
+        </div>
+
+        <!-- 결론 히어로 (분석 완료 후 나타남) -->
+        <div class="hero afterrun">
+          <div class="vinfo">
+            <span class="vb">✓ 최종 결론 · Critic 검증 통과</span>
+            <h2>진범 = <span class="eq">ETCH-03</span></h2>
+            <div class="sub">식각 RF power 이상 → Edge-Ring · 다중 에이전트 합의</div>
+            <div class="why"><b>왜?</b> 불량 6개 웨이퍼가 <b>모두 ETCH-03</b> 통과 + 사건 직전 <b>RF power 규격(2400–2600W) 벗어나 2680W 드리프트</b>(FDC OOS 12점) + <b>t0−1일 BM 정비</b>. 공통장비 <b>LITHO-01은 함정</b>, "링=온도" <b>RTP-02 가설은 온도 정상</b>이라 기각.</div>
+            <div class="grounds">
+              <div class="gd"><div class="gl">FDC 증거</div><div class="gv">RF OOS 12점</div></div>
+              <div class="gd"><div class="gl">시간정합</div><div class="gv">t0−1d BM</div></div>
+              <div class="gd"><div class="gl">공통성·계보</div><div class="gv">불량 8/8</div></div>
+              <div class="gd rej"><div class="gl">경쟁가설</div><div class="gv">RTP-02 기각</div></div>
+              <div class="gd rej"><div class="gl">함정</div><div class="gv">LITHO-01</div></div>
+            </div>
+          </div>
+          <div class="rt">
+            <div class="ring"><svg width="126" height="126" viewBox="0 0 126 126"><circle cx="63" cy="63" r="52" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="11"/><circle cx="63" cy="63" r="52" fill="none" stroke="#6fe3a0" stroke-width="11" stroke-linecap="round" stroke-dasharray="300 327" transform="rotate(-90 63 63)"/></svg><div class="cv"><b>92%</b><span>신뢰도</span></div></div>
+            <div class="acts"><button class="hbtn pri">정비 지시</button><button class="hbtn gh" onclick="runAnalysis()">↻ 재분석</button></div>
+          </div>
+        </div>
+
+        <div class="cols">
+          <!-- 좌: 에이전트 (분석 중 애니메이션) -->
+          <div>
+            <div class="colhd">🔗 에이전트 추론 과정 <span class="cnt">5 에이전트 · 9 도구호출</span></div>
+            <div id="agentSummary" class="card" style="border-left:3px solid var(--accent)">🔗 <b>5개 에이전트</b>(판독·검색·가설·검증·제안)가 합의로 <b>ETCH-03</b> 확정. <b style="color:var(--warn)">예시1 · 최소 공개</b> — 사용자에겐 <b>결론·근거·조치만</b> 보이고, 내부 추론과정은 감춥니다. 상세는 예시2·3에서.</div>
+            <div class="timeline" id="timeline">
+
+              <div class="agent open" data-i="0">
+                <div class="ah" onclick="tog(this)"><div class="ic">👁</div><div class="who"><div class="an">① 판독 에이전트</div><div class="ar">Vision-Language / VFM</div></div><div class="stat"><span class="badge ok">완료</span><span class="caret">▶</span></div></div>
+                <div class="ab">
+                  <div class="out1">2단계 판독 → <b>Edge-Ring</b> (신뢰도 0.94). 웨이퍼 macro + die micro 이중 분류.</div>
+                  <div class="io lv2"><span class="k">macro: Cosmos Reason 1.7B VLM</span><span class="k">micro: NV-DINOv2 VFM</span><span class="k">온프레미스(WaferSAGE)</span></div>
+                  <div class="trace lv3"><div class="tl">추론 트레이스 · Thought → Action → Observation</div>
+                    <div class="taorow"><div class="lab t">THOUGHT</div><div class="txt">웨이퍼맵 형태를 판정해야 함 — 에지 링(전둘레) vs 에지 국소 구분이 관건.</div></div>
+                    <div class="taorow"><div class="lab a">ACTION</div><div class="txt">웨이퍼 macro <b>Cosmos Reason 1.7B(VLM)</b> + die micro <b>NV-DINOv2(VFM)</b> 임베딩 유사검색. <span class="cite">[NVIDIA]</span></div></div>
+                    <div class="taorow"><div class="lab o">OBSERVE</div><div class="txt">"바깥 <b>링 전둘레</b> 연속, 중앙 정상" → <b>Edge-Ring 0.94</b>, 유사 die 7/8. 환각 루브릭 통과 → 단독 확정. <span class="cite">[wafer &gt;96%·die 98.5%]</span></div></div>
+                  </div>
+                  <div class="audit lv4"><span class="ky">classify_wafer</span>(<span class="st">"W07"</span>, macro=<span class="st">"cosmos-reason-1.7b"</span>, micro=<span class="st">"nv-dinov2"</span>) → {top1:<span class="st">"Edge-Ring"</span>,p:0.941, knn_die:<span class="st">7/8</span>, deploy:<span class="st">"on-prem"</span>}</div>
+                </div>
+              </div>
+
+              <div class="agent" data-i="1">
+                <div class="ah" onclick="tog(this)"><div class="ic p">🔎</div><div class="who"><div class="an">② 지식검색 에이전트</div><div class="ar">GraphRAG / 이중모달 KG</div></div><div class="stat"><span class="badge ok">완료</span><span class="caret">▶</span></div></div>
+                <div class="ab">
+                  <div class="out1">Edge-Ring → 지식그래프 검색·랭킹 → <b>식각 비균일</b> 1순위, 온도(RTP) 경쟁 후보.</div>
+                  <div class="io lv2"><span class="k">결함기반 3-hop 검색</span><span class="k">도메인 제약 선별</span><span class="k">LightRAG+BWDKG</span></div>
+                  <div class="trace lv3"><div class="tl">추론 트레이스 · Thought → Action → Observation</div>
+                    <div class="taorow"><div class="lab t">THOUGHT</div><div class="txt">Edge-Ring의 원인 후보를 지식그래프에서 찾고 도메인 제약으로 선별해야 함.</div></div>
+                    <div class="taorow"><div class="lab a">ACTION</div><div class="txt"><b>kg_retrieve</b>(Edge-Ring, 3-hop) — mapping_table + <b>Minitab 공간패턴 사전</b> 병행 검색·랭킹. <span class="cite">[WaferDSR-RAG·GraphRAG]</span></div></div>
+                    <div class="taorow"><div class="lab o">OBSERVE</div><div class="txt">식각 RF 비균일 0.48 · <b>RTP 온도 불균일 0.30</b> · 세정 0.12 → 후보 2개 경쟁 → 증거로 판별하도록 넘김. <span class="cite">[Minitab: 링=온도]</span></div></div>
+                  </div>
+                  <div class="audit lv4"><span class="ky">kg_retrieve</span>(<span class="st">"Edge-Ring"</span>,hops=3) → [{cause:<span class="st">"etch_nonuniformity"</span>,w:.48,cite:<span class="wn">"mapping_table:L47"</span>},{cause:<span class="st">"rtp_thermal"</span>,w:.30,cite:<span class="wn">"minitab-pattern"</span>}]</div>
+                </div>
+              </div>
+
+              <div class="agent" data-i="2">
+                <div class="ah" onclick="tog(this)"><div class="ic w">💡</div><div class="who"><div class="an">③ 가설 에이전트</div><div class="ar">Hypothesis</div></div><div class="stat"><span class="badge ok">가설 3</span><span class="caret">▶</span></div></div>
+                <div class="ab">
+                  <div class="out1">원인 지식을 <b>장비 후보</b>로 변환 → 확률 순위. 1순위 <b>ETCH-03</b>, 경쟁 <b>RTP-02</b>.</div>
+                  <div class="lv2" style="margin-top:9px">
+                    <div class="hyp"><div class="nm">ETCH-03 <span class="flag win">1순위·식각</span></div><div class="track"><div class="fill top" style="width:48%"></div></div><div class="pv">.48</div></div>
+                    <div class="hyp"><div class="nm">RTP-02 <span class="flag" style="background:var(--purple-s);color:var(--purple)">경쟁·온도</span></div><div class="track"><div class="fill" style="width:30%;background:var(--purple)"></div></div><div class="pv">.30</div></div>
+                    <div class="hyp"><div class="nm">CLEAN-01</div><div class="track"><div class="fill" style="width:12%"></div></div><div class="pv">.12</div></div>
+                  </div>
+                  <div class="trace lv3"><div class="tl">추론 트레이스 · Thought → Action → Observation</div>
+                    <div class="taorow"><div class="lab t">THOUGHT</div><div class="txt">원인 지식을 실제 장비 후보로 매핑하되, 경쟁 가설을 단정 없이 보존.</div></div>
+                    <div class="taorow"><div class="lab a">ACTION</div><div class="txt"><b>map_cause_to_equipment</b>(cause, lot=LOT2381) — 라우트·telemetry 서명 대조. <span class="cite">[mapping_table]</span></div></div>
+                    <div class="taorow"><div class="lab o">OBSERVE</div><div class="txt"><b>ETCH-03</b>(rf_power/step_up) .48 · <b>RTP-02</b>(edge_temp/drift) .30 · CLEAN-01 .12 → 검증 단계로 이관.</div></div>
+                  </div>
+                  <div class="audit lv4"><span class="ky">map_cause_to_equipment</span> → [ETCH-03:.48(<span class="st">rf_power</span>), RTP-02:.30(<span class="st">edge_temp</span>), CLEAN-01:.12]</div>
+                </div>
+              </div>
+
+              <div class="agent" data-i="3">
+                <div class="ah" onclick="tog(this)"><div class="ic c">🧪</div><div class="who"><div class="an">④ 검증 에이전트 <span style="font-size:10px;color:var(--crit);font-family:var(--mono)">핵심</span></div><div class="ar">Critic · FDC 증거 · 함정 기각</div></div><div class="stat"><span class="badge ok">확정</span><span class="caret">▶</span></div></div>
+                <div class="ab">
+                  <div class="out1">증거로 두 종류를 걸러냄 — <b>경쟁 지식(RTP-02) 기각</b> + <b>공통장비 함정(LITHO-01) 기각</b> → ETCH-03 <b>확정</b>.</div>
+                  <div class="lv2"><table>
+                    <tr><th>후보</th><th>불량통과</th><th>FDC telemetry</th><th>t0 BM</th><th>정상lot</th><th>판정</th></tr>
+                    <tr class="cand"><td class="mono">ETCH-03</td><td class="mono">8/8</td><td style="color:var(--crit);font-weight:700">rf OOS 12 ▲</td><td>−1d 있음</td><td class="mono">소수</td><td><span class="chip conf">확정 ★</span></td></tr>
+                    <tr><td class="mono">RTP-02</td><td class="mono">8/8</td><td style="color:var(--good)">온도 정상</td><td>없음</td><td class="mono">다수</td><td><span class="chip rej">경쟁가설</span></td></tr>
+                    <tr><td class="mono">LITHO-01</td><td class="mono">8/8</td><td style="color:var(--good)">정상</td><td>없음</td><td class="mono">다수통과</td><td><span class="chip rej">함정</span></td></tr>
+                    <tr><td class="mono">CLEAN-01</td><td class="mono">5/8</td><td style="color:var(--good)">정상</td><td>없음</td><td class="mono">다수</td><td><span class="chip rej">배제</span></td></tr>
+                  </table></div>
+                  <div class="trace lv3"><div class="tl">추론 트레이스 · Thought → Action → Observation <span style="color:var(--faint)">(FDC: Detect→Classify)</span></div>
+                    <div class="taorow"><div class="lab t">THOUGHT</div><div class="txt">공통장비는 진범+함정이 <b>동률(8/8)</b> → "정상 lot 통과"는 판별자 아님. <b>FDC 증거·정비이력</b>으로 갈라야 함.</div></div>
+                    <div class="taorow"><div class="lab a">ACTION</div><div class="txt"><b>run_commonality</b> + <b>query_telemetry</b>(ETCH-03·RTP-02) + <b>get_maintenance</b> + <b>get_normal_lot_ratio</b>. <span class="cite">[INFICON FDC · genealogy]</span></div></div>
+                    <div class="taorow"><div class="lab o">OBSERVE</div><div class="txt"><b>ETCH-03</b> rf OOS 12 + BM −1d → <b>확정</b> · <b>RTP-02</b> 온도 정상 → 경쟁가설 기각 · <b>LITHO-01</b> 정상+정상lot 다수 → <b>함정 기각</b>. conf 0.92.</div></div>
+                  </div>
+                  <div class="audit lv4"><span class="ky">run_commonality</span>→{ETCH-03:8,RTP-02:8,LITHO-01:8,CLEAN-01:5}<br><span class="ky">query_telemetry</span>(<span class="st">"ETCH-03","rf_power"</span>)→oos:<span class="wn">12</span> spec:[2400,2600]<br><span class="ky">query_telemetry</span>(<span class="st">"RTP-02","edge_temp"</span>)→oos:<span class="st">0</span> <span class="cmt"># 경쟁가설 기각</span></div>
+                </div>
+              </div>
+
+              <div class="agent" data-i="4">
+                <div class="ah" onclick="tog(this)"><div class="ic">🛠</div><div class="who"><div class="an">⑤ 제안 에이전트</div><div class="ar">Action · 역할적응형 설명</div></div><div class="stat"><span class="badge ok">제안 3</span><span class="caret">▶</span></div></div>
+                <div class="ab">
+                  <div class="out1">확정 원인 기준 <b>조치·확산 점검</b>을 우선순위로 제안(하단 카드). <span class="cite lv3">[WaferDSR-RAG 역할적응형]</span></div>
+                  <div class="trace lv3"><div class="tl">추론 트레이스 · Thought → Action → Observation <span style="color:var(--faint)">(FDC: Respond)</span></div>
+                    <div class="taorow"><div class="lab t">THOUGHT</div><div class="txt">확정 원인(ETCH-03 rf_power)에 맞춰 즉시조치·확산점검·재발감시를 우선순위화, 수신자 역할에 맞춤.</div></div>
+                    <div class="taorow"><div class="lab a">ACTION</div><div class="txt"><b>recommend</b>(cause=ETCH-03/rf_power) — 조치 템플릿·확산 lot 조회. <span class="cite">[WaferDSR-RAG 역할적응형]</span></div></div>
+                    <div class="taorow"><div class="lab o">OBSERVE</div><div class="txt">P1 챔버 RF 점검 · P2 동일챔버 8-lot hold · P3 rf_power FDC/SPC 감시룰(하단 카드).</div></div>
+                  </div>
+                  <div class="audit lv4"><span class="ky">recommend</span>(cause=<span class="st">"ETCH-03/rf_power"</span>) → [P1 챔버점검, P2 8-lot hold, P3 FDC룰]</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- 우: 근거 (완료 후) -->
+          <div class="afterrun" id="evcol">
+            <div class="colhd">🔬 근거 <span class="cnt">결론 뒷받침</span></div>
+            <div class="evside">
+              <div class="card"><div class="ct">📉 ETCH-03 rf_power (FDC) <span class="r">OOS 12점</span></div><div class="cs">규격 2400–2600W · t0 직전 이탈</div>
+                <svg viewBox="0 0 420 150" class="chart">
+                  <rect x="38" y="34" width="376" height="58" fill="#1f9d57" opacity="0.07"/>
+                  <line x1="38" y1="34" x2="414" y2="34" stroke="#1f9d57" stroke-dasharray="4 3" stroke-width="1"/><text x="41" y="30" font-size="8.5" fill="#1f9d57" font-family="monospace">2600</text>
+                  <line x1="38" y1="92" x2="414" y2="92" stroke="#1f9d57" stroke-dasharray="4 3" stroke-width="1"/><text x="41" y="103" font-size="8.5" fill="#1f9d57" font-family="monospace">2400</text>
+                  <rect x="300" y="8" width="114" height="128" fill="#d64545" opacity="0.06"/>
+                  <polyline fill="none" stroke="#2b7bb0" stroke-width="2" points="42,66 78,70 114,63 150,68 186,65 222,71 258,64 294,52 322,30 358,22 394,26"/>
+                  <circle cx="322" cy="30" r="3.5" fill="#d64545"/><text x="288" y="16" font-size="9" fill="#d64545" font-family="'Malgun Gothic'">BM 후 상향</text>
+                  <text x="42" y="146" font-size="8.5" fill="#93a1b2" font-family="monospace">t0−10d ——————→ t0</text>
+                </svg>
+              </div>
+              <div class="card"><div class="ct">🗺 웨이퍼 공간패턴 진단 사전 <span class="r" style="color:var(--muted)">Minitab</span></div><div class="cs">공간 패턴 → 유력 원인 → SPC</div>
+                <table>
+                  <tr><th>패턴</th><th>유력 원인</th><th>SPC</th></tr>
+                  <tr class="cand"><td>Edge 링 ●</td><td>RTP 온도 불균일 · 식각 rate</td><td>패턴감지</td></tr>
+                  <tr><td>클러스터</td><td>장비 근처 오염</td><td>로트추적</td></tr>
+                  <tr><td>줄무늬</td><td>장비 정렬 불량</td><td>예방개입</td></tr>
+                </table>
+                <div class="cites">현재 <b>Edge 링</b> → 후보 2개 → telemetry가 <b>식각 RF</b>로 확정.</div>
+              </div>
+              <div class="card"><div class="ct">🕸 지식그래프 인과 경로</div><div class="cs">이중모달 KG(BWDKG)</div>
+                <div class="kg"><div class="kgn d">Edge-Ring<small>결함</small></div><span class="kga">→</span><div class="kgn">식각 비균일<small>etch</small></div><span class="kga">→</span><div class="kgn e">ETCH-03<small>RF</small></div></div>
+                <div class="cites lv3"><b style="color:var(--ink)">인용</b> · <span class="s">mapping_table:L47</span> · <span class="s">fab_model.yaml</span> · <span class="s">telemetry#ETCH-03</span></div>
+              </div>
+              <div class="card lv4"><div class="ct" style="color:var(--purple)">🔍 감사 · 정답 대조</div>
+                <div class="audit" style="margin:0"><span class="cmt"># ground_truth[EVT-2381]</span><br>pred=<span class="st">"ETCH-03"</span> → <span class="st">MATCH ✓</span> · trap=<span class="st">"LITHO-01"</span>(✓) · 배치 <span class="st">10/10</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 제안 -->
+        <div class="afterrun" style="margin-top:16px">
+          <div class="colhd">🛠 조치 제안 <span class="cnt">확정 원인 기반 · 우선순위</span></div>
+          <div class="recrow">
+            <div class="rec p1"><div class="p">P1 · 즉시</div><div class="rt2">ETCH-03 챔버 RF 점검</div><div class="rd">rf_power 2680W drift 원인 확인, 정상화 전 <b>가공 중지</b>.</div><div class="rb">정비 티켓 →</div></div>
+            <div class="rec p2"><div class="p">P2 · 격리</div><div class="rt2">동일 챔버 8-lot Hold</div><div class="rd">BM(−1d) 이후 통과분 확산 점검.</div><div class="rb">Lot 선택 →</div></div>
+            <div class="rec"><div class="p">P3 · 감시</div><div class="rt2">rf_power FDC/SPC 룰</div><div class="rd">규격 이탈 조기경보로 재발 방지 → 대시보드 임베드. <span class="lv3" style="font-family:var(--mono);font-size:10px;color:var(--faint)">[INFICON FDC·Minitab]</span></div><div class="rb">룰 추가 →</div></div>
+          </div>
+
+          <!-- 설계 노트 -->
+          <div class="designnote" id="dnote">
+            <div class="dnh" onclick="document.getElementById('dnote').classList.toggle('open')">⚙️ 설계 노트 — 공개수준(L1~L4) &amp; 참고자료 근거 <span class="caret">▶</span></div>
+            <div class="dnb">
+              <p style="font-size:12.5px;color:var(--muted);margin:2px 0 12px">상단 <b>공개수준 세그먼트</b>가 이 표를 화면으로 구현. 수신자·리스크에 따라 노출 깊이를 바꿉니다.</p>
+              <table class="matrix">
+                <tr><th>노출 요소</th><th>L1<br><span class="mono2">경영</span></th><th>L2<br><span class="mono2">현장</span></th><th>L3<br><span class="mono2">엔지니어</span></th><th>L4<br><span class="mono2">감사</span></th></tr>
+                <tr><td class="n">결론+신뢰도</td><td class="yes">●</td><td class="yes">●</td><td class="yes">●</td><td class="yes">●</td></tr>
+                <tr><td class="n">핵심 근거 3종</td><td class="no">한줄</td><td class="yes">●</td><td class="yes">●</td><td class="yes">●</td></tr>
+                <tr><td class="n">에이전트별 결과</td><td class="no">−</td><td class="part">요약</td><td class="yes">●</td><td class="yes">●</td></tr>
+                <tr><td class="n">추론 트레이스</td><td class="no">−</td><td class="no">−</td><td class="yes">●</td><td class="yes">●</td></tr>
+                <tr><td class="n">도구호출·정답대조</td><td class="no">−</td><td class="no">−</td><td class="no">−</td><td class="yes">●</td></tr>
+              </table>
+              <div class="note" style="background:var(--good-s);border-color:#b7dfc6"><b style="color:var(--good)">✓ 실제 링크 확인 반영</b> — 아래는 링크를 직접 열어 추출한 구체 수치·기법을 화면에 넣은 것.</div>
+              <ul class="refs" style="padding-left:18px">
+                <li><b>NVIDIA VLM/VFM</b> → ①판독. Cosmos Reason 1.7B(웨이퍼 <b>&gt;96%</b>)+NV-DINOv2(die <b>98.5%</b>), auto-labeling 빌드 2×. <span class="src">developer.nvidia.com/blog/…</span></li>
+                <li><b>Minitab 웨이퍼플롯/SPC</b> → 공간패턴 진단 사전. <b>링=RTP 온도불균일</b>·클러스터=오염·줄무늬=정렬불량. <span class="src">blog.minitab.com/ko wafer-plots</span></li>
+                <li><b>WaferSAGE</b> → ①온프레미스. <b>Qwen3-VL-4B</b>(외부반출 0·API 90%·500–3000× 저비용)·루브릭 환각방지. <span class="src">arxiv 2604.27629v4</span></li>
+                <li><b>INFICON FabGuard FDC</b> → ④검증. 센서 실시간 → 규격·<b>학습된 정상범위</b> 이탈 경보(SmartFDC). <span class="src">inficon.com/ko fdc-반도체</span></li>
+                <li><b>PDF Solutions Exensio</b> → ④commonality. <b>lot·wafer 계보(genealogy)</b>·수율영향 랭킹. <span class="src">pdf.com Exensio</span></li>
+                <li><b>Fanruan 수율분석</b> → KPI·방법론. <b>Wafer/Die/EDS 수율</b>·장비상관·7단계 개선사이클. <span class="src">fanruan.com/ko-kr Semiconductor-yield</span></li>
+                <li><b>WaferDSR-RAG</b>(요약)·<b>GraphRAG/LightRAG</b>(개념) → ②검색·랭킹. <b>Stanford CS230</b>(PDF 파싱실패, 개념만) → 판독 평가. <span class="src">J.Mfg.Sys 85 · MS GraphRAG · cs230</span></li>
+              </ul>
+              <div class="note"><b>방법론 정합</b> — 파이프라인이 업계 표준과 일치: 웨이퍼맵 판독(①) → commonality·계보 필터(④) → FDC 장비증거 확정(④) → 조치·모니터링 임베드(⑤). Fanruan 7단계·PDF 계보·INFICON FDC와 매핑.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div></div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+var LOT='LOT2381';
+// wafer 맵 생성기(초안 자리표시)
+function wmap(kind){
+  var N=9,C=(N-1)/2,R=C+0.3,cells='';
+  for(var y=0;y<N;y++)for(var x=0;x<N;x++){
+    var d=Math.hypot(x-C,y-C);
+    if(d>R){cells+='<rect x="'+(x*10)+'" y="'+(y*10)+'" width="9" height="9" fill="#f4f7fa"/>';continue;}
+    var def=false;
+    if(kind==='edge')def=d>R-1.1; else if(kind==='center')def=d<1.4; else if(kind==='scratch')def=Math.abs(x-y)<0.7; else def=((x*7+y*3)%11)<1;
+    cells+='<rect x="'+(x*10)+'" y="'+(y*10)+'" width="9" height="9" fill="'+(def?'#d64545':'#cfe0ec')+'"/>';
+  }
+  return '<svg class="wm" viewBox="0 0 90 90">'+cells+'</svg>';
+}
+var WAFERS=[['W01','edge',88,0],['W02','edge',85,0],['W03','center',83,1],['W04','edge',80,1],['W05','edge',90,0],['W06','scratch',86,0],
+ ['W07','edge',78,1],['W08','center',81,1],['W09','edge',89,0],['W10','edge',79,1],['W11','edge',87,0],['W12','center',82,1]];
+function buildGal(){
+  var g=document.getElementById('gal');
+  g.innerHTML=WAFERS.map(function(w){
+    return '<div class="waf '+(w[3]?'bad':'')+'" onclick="pickWafer(\''+w[0]+'\')">'+wmap(w[1])+'<div class="wl">'+w[0]+'</div><div class="wy">'+w[2]+'%</div></div>';
+  }).join('');
+}
+// 화면 라우팅
+function nav(id){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});
+  document.getElementById('sc-'+id).classList.add('active');
+  document.getElementById('discbar').classList.toggle('hide', id!=='analysis');
+  setCrumb(id);
+  document.getElementById('nv-an').classList.toggle('on', id==='analysis');
+  document.getElementById('nv-dash').classList.toggle('on', id!=='analysis');
+  document.querySelector('.body').scrollTop=0; window.scrollTo(0,0);
+}
+function setCrumb(id){
+  var c=document.getElementById('crumb');
+  if(id==='dash')c.innerHTML='<b>수율 대시보드</b>';
+  else if(id==='fdc')c.innerHTML='<b>FDC 모니터</b>';
+  else if(id==='report')c.innerHTML='<b>수율·RCA 리포트</b>';
+  else if(id==='kg')c.innerHTML='<b>결함 지식그래프</b>';
+  else if(id==='settings')c.innerHTML='<b>설정</b>';
+  else if(id==='wafer')c.innerHTML='<a onclick="nav(\'dash\')">이상 Lot</a> <span class="sep">›</span> <b>'+LOT+'</b> <span class="sep">›</span> Wafer 선택';
+  else c.innerHTML='<a onclick="nav(\'dash\')">이상 Lot</a> <span class="sep">›</span> <a onclick="nav(\'wafer\')">'+LOT+'</a> <span class="sep">›</span> W07 <span class="sep">›</span> <b style="color:var(--accent)">AI 원인분석</b>';
+}
+function pickLot(lot){LOT=lot;document.getElementById('wf-lot').textContent=lot;buildGal();nav('wafer');}
+function pickWafer(w){nav('analysis');runAnalysis();}
+function gotoAnalysis(){LOT='LOT2381';document.getElementById('wf-lot').textContent=LOT;buildGal();nav('analysis');runAnalysis();}
+// 사용자 공개 예시(3종)
+function setEx(n){document.getElementById('app').className='app ex'+n;
+  document.querySelectorAll('.seg button').forEach(function(b){b.classList.toggle('on',b.dataset.e==n)});
+  var names={1:'예시1 · 최소 공개',2:'예시2 · 균형 공개',3:'예시3 · 전체 공개'};
+  var el=document.getElementById('exnow'); if(el)el.textContent=names[n];
+  if(n>=2)document.querySelectorAll('.agent').forEach(function(a){a.classList.add('open')});
+}
+function tog(h){h.parentElement.classList.toggle('open')}
+// 분석 실행 애니메이션 (에이전트별 유동 소요시간 — 검증은 telemetry 조회라 오래, 제안은 짧게)
+var AGENTS_META=[
+ {label:'완료',dur:900,task:'① 판독 — 웨이퍼맵 판독 · 유사 die 검색'},
+ {label:'완료',dur:1500,task:'② 지식검색 — 지식그래프 3-hop 검색 · 랭킹'},
+ {label:'가설 3',dur:750,task:'③ 가설 — 원인 → 장비 후보 매핑'},
+ {label:'확정',dur:1950,task:'④ 검증 — FDC telemetry 조회 · 함정 기각'},
+ {label:'제안 3',dur:650,task:'⑤ 제안 — 조치 · 확산 점검 생성'}
+];
+var _elap=null;
+function runAnalysis(){
+  var sc=document.getElementById('sc-analysis');
+  sc.classList.add('running');sc.classList.remove('done');
+  var ags=[].slice.call(sc.querySelectorAll('.agent'));
+  ags.forEach(function(a){a.classList.remove('done','running');a.classList.add('pending','open');var b=a.querySelector('.badge');b.textContent='대기';b.className='badge run';});
+  setRun(0,ags.length,'');
+  runStep(ags,0);
+}
+function runStep(ags,i){
+  if(i>=ags.length){finish();return;}
+  var a=ags[i];a.classList.remove('pending');a.classList.add('running');
+  var meta=AGENTS_META[i]||{label:'완료',dur:800,task:'분석'};
+  var b=a.querySelector('.badge');b.textContent='추론 중…';b.className='badge run';
+  var t0=Date.now();
+  if(_elap)clearInterval(_elap);
+  _elap=setInterval(function(){var el=((Date.now()-t0)/1000).toFixed(1);document.getElementById('runtxt').textContent='['+(i+1)+'/'+ags.length+'] '+meta.task+'  ·  '+el+'s';},100);
+  document.getElementById('runfill').style.width=((i+0.15)/ags.length*100)+'%';
+  setTimeout(function(){
+    clearInterval(_elap);
+    a.classList.remove('running');a.classList.add('done');
+    var el=((Date.now()-t0)/1000).toFixed(1);
+    b.textContent=meta.label+' · '+el+'s';b.className='badge ok';
+    setRun(i+1,ags.length,'');
+    runStep(ags,i+1);
+  },meta.dur);
+}
+function setRun(n,t,task){
+  document.getElementById('runfill').style.width=(n/t*100)+'%';
+  document.getElementById('runtxt').textContent = task ? task : ('AI 에이전트 분석 완료  '+n+' / '+t);
+}
+function finish(){if(_elap)clearInterval(_elap);var sc=document.getElementById('sc-analysis');sc.classList.remove('running');sc.classList.add('done');}
+// 지식그래프 (knowledge_graph.json 반영)
+var KG={order:['Edge-Ring','Edge-Loc','Center','Loc','Scratch','Random','Donut','Near-full'],data:{
+ 'Edge-Ring':{freq:9680,loss:5.21,confuse:['Edge-Loc'],paths:[
+   {proc:'에지 식각·증착(에처/CVD)',phys:'에지 식각가스 흐름 불균일 · 클램프링 그림자',conf:0.85,ev:'전둘레 에지 링(edge_ratio↑, 전방위) → 챔버 에지 유동. 최다빈도(9,680)'},
+   {proc:'에지 핸들링·클램프링',phys:'클램프링 접촉부 증착/식각 차폐',conf:0.6,ev:'포커스링·클램프링 접촉 둘레 링형 편차'}]},
+ 'Edge-Loc':{freq:5189,loss:3.64,confuse:['Edge-Ring','Loc'],paths:[
+   {proc:'웨이퍼 에지 핸들링·클램프',phys:'에지 클램프 접촉 손상 · 국소 에지 식각 편차',conf:0.78,ev:'에지 국소 호형(angular_concentration↑) → 특정 접촉점 손상'}]},
+ 'Center':{freq:4294,loss:14.84,confuse:['Donut'],paths:[
+   {proc:'척킹·온도 제어(CVD/에피/CMP)',phys:'척 중심부 온도 편차 / CMP 중심 과연마',conf:0.82,ev:'중심 밀집(center_ratio↑) → 웨이퍼-척 열접촉·연마압 중심 편중. 수율타격 14.8%p'},
+   {proc:'가스 분사(샤워헤드) 균일도',phys:'중심 집중 가스류로 증착/식각 중심 편차',conf:0.55,ev:'샤워헤드 중심 집중 시 중심 밀집 패턴(보조가설)'}]},
+ 'Loc':{freq:3593,loss:5.09,confuse:['Edge-Loc'],paths:[
+   {proc:'챔버 파티클·국소 공정편차',phys:'챔버 내 파티클 낙하 / 국소 오염원',conf:0.72,ev:'국소 밀집 클러스터(largest_cluster_frac↑)는 점오염원 특성'}]},
+ 'Scratch':{freq:1193,loss:5.58,confuse:[],paths:[
+   {proc:'웨이퍼 이송·핸들링(로봇암/CMP)',phys:'로봇암 기계적 접촉 긁힘 / CMP 패드 이물',conf:0.83,ev:'선형성(linearity↑) → 기계적 스와이프 궤적'}]},
+ 'Random':{freq:866,loss:15.76,confuse:[],paths:[
+   {proc:'클린룸 환경·전반 오염',phys:'환경 파티클 / 전반적 공정 산포',conf:0.7,ev:'무패턴 전면 산발 → 특정 공정보다 환경/전반 요인. 수율타격 15.8%p'}]},
+ 'Donut':{freq:555,loss:29.33,confuse:['Center'],paths:[
+   {proc:'스핀 코팅·현상(포토)',phys:'회전속도·도포두께 불균일 링형 현상 편차',conf:0.8,ev:'중간반경 링(mid_ratio↑)은 스핀코팅 원심 두께 프로파일과 일치. 수율타격 29.3%p'},
+   {proc:'베이크 열판 균일도',phys:'동심원 온도구배로 링형 반응 편차',conf:0.5,ev:'핫플레이트 동심 온도구배(보조가설)'}]},
+ 'Near-full':{freq:149,loss:83.73,confuse:[],paths:[
+   {proc:'설비 오작동·레시피 대폭 이탈',phys:'레시피 오류/설비 고장으로 전면 손상',conf:0.9,ev:'전면 불량 → 정상 산포 아님, 설비/레시피 중대 이상. 수율타격 83.7%p(치명)'}]}
+}};
+function renderKG(def){
+  var d=KG.data[def];if(!d)return;
+  document.querySelectorAll('#kgsel button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-d')===def)});
+  var h='<div style="font-size:12px;color:var(--muted);margin-bottom:12px">결함 <b style="color:var(--crit)">'+def+'</b> · 빈도 '+d.freq.toLocaleString()+' · 수율타격 '+d.loss+'%p'+(d.confuse.length?' · 혼동주의 <b>'+d.confuse.join(', ')+'</b>':'')+'</div>';
+  d.paths.forEach(function(p){
+    var lvl=p.conf>=0.85?'정설':(p.conf>=0.6?'유력':'보조가설');
+    h+='<div class="kgpath"><div class="kgflow"><div class="n def">'+def+'<small>결함</small></div><span class="ar">→</span><div class="n proc">'+p.proc+'<small>원인공정</small></div><span class="ar">→</span><div class="n phys">'+p.phys+'<small>물리원인</small></div><span style="margin-left:auto;font-family:var(--mono);font-size:11px;font-weight:700;color:var(--good)">conf '+p.conf+' · '+lvl+'</span></div>';
+    h+='<div class="confbar"><div class="conffill" style="width:'+(p.conf*100)+'%"></div></div>';
+    h+='<div style="font-size:11.5px;color:var(--muted);margin-top:7px">근거: '+p.ev+'</div></div>';
+  });
+  document.getElementById('kgview').innerHTML=h;
+}
+function buildKG(){document.getElementById('kgsel').innerHTML=KG.order.map(function(x){return '<button data-d="'+x+'" onclick="renderKG(\''+x+'\')">'+x+'</button>';}).join('');renderKG('Edge-Ring');}
+// ===== 설정 — 실제 작동 =====
+var CFG={defaultEx:2,confThresh:85,fdc:{
+ 'ETCH-03':{p:'rf_power',v:2680,lo:2400,hi:2600,u:'W'},
+ 'RTP-02':{p:'edge_temp',v:421,lo:410,hi:430,u:'°C'},
+ 'DEPO-02':{p:'chamber_p',v:3.1,lo:2.9,hi:3.3,u:'T'}}};
+function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show')},2300);}
+function flipSw(el){el.classList.toggle('off');toast(el.classList.contains('off')?'⭘ 꺼짐':'● 켜짐');}
+function flipTag(el){el.classList.toggle('off');toast(el.textContent+(el.classList.contains('off')?' 제외':' 포함'));}
+function renderFDC(){
+  var b=document.getElementById('fdcbody');if(!b)return;
+  var rows='',oos=0;
+  Object.keys(CFG.fdc).forEach(function(eq){var f=CFG.fdc[eq];var bad=(f.v<f.lo||f.v>f.hi);if(bad)oos++;
+    rows+='<tr class="'+(bad?'cand':'')+'"><td class="mono">'+eq+'</td><td class="mono">'+f.p+'</td><td class="mono" style="'+(bad?'color:var(--crit);font-weight:700':'')+'">'+f.v+f.u+(bad?' ▲':'')+'</td><td class="mono">'+f.lo+'–'+f.hi+'</td><td>'+(bad?'<span class="st c">OOS</span>':'<span class="st" style="background:var(--good-s);color:var(--good)">정상</span>')+'</td></tr>';
+  });
+  b.innerHTML=rows;
+  var c=document.getElementById('fdccount');if(c)c.textContent='OOS '+oos+'건'+(oos?' ▲':'');
+}
+function setFDC(eq,key,val){var f=CFG.fdc[eq];if(!f)return;f[key]=parseFloat(val);renderFDC();
+  var bad=(f.v<f.lo||f.v>f.hi);toast(eq+' 규격 변경 → '+(bad?'OOS(이탈)':'정상')+' · FDC 모니터 반영');}
+function setDefaultEx(n){CFG.defaultEx=n;setEx(n);
+  document.querySelectorAll('#exdefault button').forEach(function(b){b.classList.toggle('off',b.getAttribute('data-e')!=n)});
+  toast('기본 공개수준 → 예시'+n+' 적용');}
+function setConf(v){CFG.confThresh=+v;document.getElementById('confval').textContent=v+'%';}
+function saveCfg(){toast('✔ 설정 저장됨 — 모델·FDC·파이프라인·공개수준 반영');}
+function initSettings(){
+  document.querySelectorAll('#exdefault button').forEach(function(b){b.classList.toggle('off',b.getAttribute('data-e')!=CFG.defaultEx)});
+  renderFDC();
+}
+// 초기화
+buildGal();buildKG();initSettings();setEx(2);setCrumb('dash');
+</script>

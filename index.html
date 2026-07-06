@@ -1,0 +1,63 @@
+<meta charset="utf-8">
+<title>YieldWatch — 웨이퍼 결함 AI RCA · 통합 뷰</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+ :root{--side:#0f1b2d;--accent:#2f80ed;--accent2:#1f9d57;--muted:#9fb0c4;--faint:#6b7d94;--line:rgba(255,255,255,.09);
+   --mono:"Cascadia Code","Consolas",ui-monospace,monospace;--sans:"Segoe UI Variable","Segoe UI","Malgun Gothic",system-ui,sans-serif;}
+ *{box-sizing:border-box;margin:0;padding:0}
+ html,body{height:100%}
+ body{display:flex;flex-direction:column;height:100vh;overflow:hidden;background:#0b1420;font-family:var(--sans);color:#eaf1f9}
+ header{flex:none;background:var(--side);border-bottom:1px solid var(--line);padding:12px 20px 0}
+ .top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-bottom:11px}
+ .brand{display:flex;align-items:center;gap:10px}
+ .brand .lg{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#2f80ed,#1f9d57);display:flex;align-items:center;justify-content:center;font-size:16px}
+ .brand b{font-size:15px;color:#fff;display:block;line-height:1.1} .brand span{font-size:10.5px;color:var(--faint);font-family:var(--mono)}
+ .hint{margin-left:auto;font-size:11px;color:var(--faint);font-family:var(--mono)}
+ .tabs{display:flex;gap:4px;flex-wrap:wrap}
+ .tab{display:flex;flex-direction:column;gap:2px;border:none;background:transparent;color:var(--muted);padding:9px 15px 11px;cursor:pointer;font-family:var(--sans);font-size:13.5px;font-weight:700;border-bottom:2.5px solid transparent;border-radius:8px 8px 0 0;transition:.12s}
+ .tab:hover{background:rgba(255,255,255,.05);color:#dfeaf5}
+ .tab small{font-size:10px;font-weight:500;color:var(--faint);font-family:var(--mono)}
+ .tab.on{color:#fff;border-bottom-color:var(--accent);background:rgba(47,128,237,.14)} .tab.on small{color:var(--muted)}
+ .desc{background:#0b1420;color:var(--muted);font-size:12px;padding:7px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+ .desc .badge{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--accent2);background:rgba(31,157,87,.14);border-radius:5px;padding:2px 8px}
+ .stage{flex:1;position:relative;background:#eef1f6}
+ iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
+ .load{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#7d8ea3;font-family:var(--mono);font-size:13px;background:#eef1f6;z-index:1;transition:opacity .3s}
+ .load.hide{opacity:0;pointer-events:none}
+ @media(max-width:640px){.hint{display:none}.tab{padding:8px 11px 10px;font-size:12.5px}}
+</style>
+
+<header>
+  <div class="top">
+    <div class="brand"><div class="lg">◎</div><div><b>YieldWatch</b><span>웨이퍼 결함 AI RCA</span></div></div>
+    <div class="hint">탭을 눌러 화면 전환 · 각 화면은 독립 실행</div>
+  </div>
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-src="prototype.html" data-desc="대시보드 → 이상 Lot → Wafer 선택 → 다중 에이전트(T→A→O) 원인분석. 공개수준·리포트·지식그래프·FDC·설정 전부 동작." data-badge="실동작">🔬 실동작 프로토타입<small>클릭 데모</small></button>
+    <button class="tab" data-src="wireframe.html" data-desc="화면1(수율 대시보드)·화면2(AI 원인분석) 와이어프레임 + 유저플로우 + 번호별 정보 설명 + 레퍼런스." data-badge="설계도">📐 화면 설계<small>와이어프레임</small></button>
+    <button class="tab" data-src="disclosure.html" data-desc="AI 추론을 사용자에게 어디까지 보여줄지 — 전체/핵심/최소 3모델. 기밀 마스킹 관점." data-badge="기밀">🔐 공개수준 3모델<small>기밀 보호</small></button>
+  </div>
+  <div class="desc" id="desc"><span class="badge" id="descBadge">실동작</span><span id="descText"></span></div>
+</header>
+<div class="stage">
+  <div class="load" id="load">화면 불러오는 중…</div>
+  <iframe id="view" src="prototype.html" title="YieldWatch 화면"></iframe>
+</div>
+
+<script>
+var tabs=document.getElementById('tabs');
+var view=document.getElementById('view');
+var load=document.getElementById('load');
+var descText=document.getElementById('descText');
+var descBadge=document.getElementById('descBadge');
+function setDesc(b){descText.textContent=b.getAttribute('data-desc');descBadge.textContent=b.getAttribute('data-badge');}
+tabs.addEventListener('click',function(e){
+  var b=e.target.closest('.tab'); if(!b)return;
+  tabs.querySelectorAll('.tab').forEach(function(t){t.classList.toggle('on',t===b)});
+  load.classList.remove('hide');
+  view.src=b.getAttribute('data-src');
+  setDesc(b);
+});
+view.addEventListener('load',function(){load.classList.add('hide')});
+setDesc(tabs.querySelector('.tab.on'));
+</script>
