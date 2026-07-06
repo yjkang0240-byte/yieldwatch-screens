@@ -128,6 +128,18 @@
  input[type=range]{width:150px;accent-color:var(--accent);vertical-align:middle} .tag2{cursor:pointer} .tag2.off{background:#eef2f6;color:var(--faint);text-decoration:line-through}
  .savebtn{font-size:13px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:9px;padding:10px 20px;cursor:pointer} .savebtn:hover{background:var(--accent-d)}
  .minibtn{font-size:11.5px;font-weight:700;color:var(--accent);background:#fff;border:1px solid var(--line2);border-radius:7px;padding:5px 11px;cursor:pointer} .minibtn:hover{background:var(--accent-s)}
+ /* 대시보드 웨이퍼맵 히트맵 · 파레토 누적 */
+ .heat{display:grid;grid-template-columns:repeat(12,1fr);gap:2px;margin-top:4px} .heat i{aspect-ratio:1;border-radius:2px} .heatleg{display:flex;align-items:center;gap:9px;margin-top:9px;font-size:10.5px;color:var(--muted);font-family:var(--mono)} .heatleg .sw{display:inline-flex;align-items:center;gap:5px} .heatleg b{width:12px;height:12px;border-radius:3px;display:inline-block}
+ .barrow .cum{font-family:var(--mono);font-size:9.5px;color:var(--faint)}
+ /* 조치 승인 (HITL) 패널 */
+ .hitl{background:var(--panel);border:1px solid var(--hair);border-left:3px solid #3a5a8a;border-radius:13px;padding:15px 17px;margin-top:16px}
+ .hitl .hh{display:flex;align-items:center;gap:9px;font-weight:800;font-size:13.5px;margin-bottom:5px} .hitl .hh .tag{margin-left:auto;font-family:var(--mono);font-size:10px;font-weight:700;color:#3a5a8a;background:#e9eff7;border-radius:5px;padding:3px 9px} .hitl .hs{font-size:11.5px;color:var(--faint);margin-bottom:11px}
+ .blast{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 13px}
+ .blast .bx{background:#f7f9fc;border:1px solid var(--hair);border-radius:10px;padding:10px 12px;text-align:center} .blast .bx .bn{font-size:21px;font-weight:800;line-height:1} .blast .bx.iso{border-color:#f0c9c6;background:#fdf6f5} .blast .bx.iso .bn{color:var(--crit)} .blast .bx.wat{border-color:#f0dcb5;background:#fdf9f0} .blast .bx.wat .bn{color:var(--warn)} .blast .bx .bk{font-size:10.5px;color:var(--faint);font-family:var(--mono);margin-top:4px}
+ .apr{display:flex;gap:8px;flex-wrap:wrap} .apr button{font-size:12.5px;font-weight:700;border-radius:9px;padding:9px 16px;cursor:pointer;border:1px solid var(--line2);background:#fff;color:var(--muted)} .apr button.ok{background:var(--good);color:#fff;border-color:var(--good)} .apr button.no{color:var(--crit);border-color:#e6bdba} .apr button:hover{filter:brightness(.96)}
+ .ledger{margin-top:13px;background:#0f1b2d;border-radius:10px;padding:11px 13px;font-family:var(--mono);font-size:11px;color:#c8d6e8;line-height:1.7;overflow-x:auto} .ledger .ky{color:#7fb2f0} .ledger .st{color:#7ad19a} .ledger .cmt{color:#5f7591}
+ @keyframes lotflash{0%,100%{box-shadow:0 0 0 0 rgba(214,69,69,0)}25%{box-shadow:0 0 0 4px rgba(214,69,69,.28)}} .card.flash{animation:lotflash 1.2s ease}
+ @media(prefers-reduced-motion:reduce){.card.flash{animation:none;box-shadow:0 0 0 3px rgba(214,69,69,.25)}}
  @media(max-width:1000px){.side{display:none}.cols{grid-template-columns:1fr}.evside{position:static}.recrow{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}.gal{grid-template-columns:repeat(4,1fr)}.disc .dl{display:none}.kgflow{font-size:11px}}
 </style>
 
@@ -136,7 +148,7 @@
     <div class="brand"><div class="lg">◎</div><div><b>YieldWatch</b><span>RCA Agent</span></div></div>
     <nav class="nav">
       <a onclick="nav('dash')" id="nv-dash"><span class="ic">📊</span> 대시보드</a>
-      <a onclick="nav('dash')"><span class="ic">⚠️</span> 이상 Lot</a>
+      <a onclick="showLots()"><span class="ic">⚠️</span> 이상 Lot</a>
       <a onclick="nav('fdc')"><span class="ic">🩺</span> FDC 모니터</a>
       <div class="grp">분석</div>
       <a id="nv-an" class="on" onclick="gotoAnalysis()"><span class="ic">🧠</span> AI 원인분석</a>
@@ -184,7 +196,21 @@
             <circle cx="710" cy="100" r="5" fill="#d64545"/><text x="672" y="92" font-size="10.5" fill="#d64545" font-family="'Malgun Gothic'">← 이상 시작(변화점)</text>
           </svg>
         </div>
-        <div class="card"><div class="ct">⚠ 이상 Lot 목록 <span class="r">클릭 → 분석</span></div><div class="cs">문제 Lot·Wafer 확인 → AI 원인분석 진입</div>
+        <div class="cols" style="margin-bottom:14px">
+          <div class="card" style="margin-bottom:0"><div class="ct">🧱 결함 파레토 <span class="r" style="color:var(--muted)">빈도순 · WM-811K 8종</span></div><div class="cs">어떤 결함이 많은가 — 대응 우선순위 (막대=빈도, 우측=누적%)</div>
+            <div class="barrow"><span class="bl">Edge-Ring</span><div class="bt2"><div class="bf" style="width:100%"></div></div><span class="bv">9,680 <span class="cum">·37%</span></span></div>
+            <div class="barrow"><span class="bl">Edge-Loc</span><div class="bt2"><div class="bf" style="width:53.6%"></div></div><span class="bv">5,189 <span class="cum">·57%</span></span></div>
+            <div class="barrow"><span class="bl">Center</span><div class="bt2"><div class="bf" style="width:44.4%"></div></div><span class="bv">4,294 <span class="cum">·73%</span></span></div>
+            <div class="barrow"><span class="bl">Loc</span><div class="bt2"><div class="bf" style="width:37.1%"></div></div><span class="bv">3,593 <span class="cum">·87%</span></span></div>
+            <div class="barrow"><span class="bl">기타 4종</span><div class="bt2"><div class="bf" style="width:28.5%"></div></div><span class="bv">2,763 <span class="cum">·100%</span></span></div>
+            <div class="hint">💡 상위 4종이 전체의 <b>87%</b> — Edge 계열 먼저 대응. <span style="font-family:var(--mono)">source: eda_out/label_freq</span></div>
+          </div>
+          <div class="card" style="margin-bottom:0"><div class="ct">🗺 웨이퍼맵 <span class="r" style="color:var(--muted)">density hotspot</span></div><div class="cs">defect-overlay · 결함이 어디 몰리나 (현재 이상 lot 합성)</div>
+            <div class="heat" id="heat"></div>
+            <div class="heatleg"><span class="sw"><b style="background:#eef1f5"></b>정상</span><span class="sw"><b style="background:#e6c3c1"></b>중밀도</span><span class="sw"><b style="background:#c85c58"></b>hotspot</span><span style="margin-left:auto">패턴: <b style="color:var(--crit)">Edge-Ring</b> (전둘레 링)</span></div>
+          </div>
+        </div>
+        <div class="card" id="lotlist"><div class="ct">⚠ 이상 Lot 목록 <span class="r">클릭 → 분석</span></div><div class="cs">문제 Lot·Wafer 확인 → AI 원인분석 진입</div>
           <table>
             <tr><th>Lot</th><th>Wafer(불량)</th><th>주 결함</th><th>Die수율</th><th>상태</th><th>발생</th><th></th></tr>
             <tr class="lotrow" onclick="pickLot('LOT2381')"><td class="mono">LOT2381</td><td class="mono">25 (6)</td><td>Edge-Ring</td><td class="mono">87.2%</td><td><span class="st c">위험</span></td><td class="mono">10:24</td><td class="go">열기 ▶</td></tr>
@@ -509,6 +535,24 @@
             <div class="rec"><div class="p">P3 · 감시</div><div class="rt2">rf_power FDC/SPC 룰</div><div class="rd">규격 이탈 조기경보로 재발 방지 → 대시보드 임베드. <span class="lv3" style="font-family:var(--mono);font-size:10px;color:var(--faint)">[INFICON FDC·Minitab]</span></div><div class="rb">룰 추가 →</div></div>
           </div>
 
+          <!-- 조치 승인 (HITL) — operator approval -->
+          <div class="hitl">
+            <div class="hh">✅ 조치 승인 <span style="font-weight:600;font-size:12px;color:var(--muted)">Human-in-the-Loop</span> <span class="tag">operator: KT · 신뢰도 92%</span></div>
+            <div class="hs">AI는 확정·근거·조치까지만 — <b>최종 실행은 엔지니어 승인</b>. 아래 영향 범위(blast radius)를 확인하고 결정하세요.</div>
+            <div class="blast">
+              <div class="bx iso"><div class="bn">3</div><div class="bk">격리(Hold)</div></div>
+              <div class="bx wat"><div class="bn">5</div><div class="bk">감시(Watch)</div></div>
+              <div class="bx"><div class="bn">8</div><div class="bk">영향 Lot 합계</div></div>
+            </div>
+            <div class="apr">
+              <button class="ok" onclick="approve('iso')">격리+재교정 승인</button>
+              <button onclick="approve('wat')">감시만</button>
+              <button onclick="approve('esc')">에스컬레이션</button>
+              <button class="no" onclick="approve('rej')">반려</button>
+            </div>
+            <div class="ledger lv4" id="ledger"><span class="cmt"># immutable ledger — 모든 결정 감사기록</span><br><span class="ky">rca.commit</span>(evt=<span class="st">"EVT-2381"</span>, verdict=<span class="st">"ETCH-03"</span>, conf=<span class="st">0.92</span>, gt=<span class="st">"MATCH ✓"</span>) → <span class="st">PENDING_APPROVAL</span></div>
+          </div>
+
           <!-- 설계 노트 -->
           <div class="designnote" id="dnote">
             <div class="dnh" onclick="document.getElementById('dnote').classList.toggle('open')">⚙️ 설계 노트 — 공개수준(L1~L4) &amp; 참고자료 근거 <span class="caret">▶</span></div>
@@ -586,6 +630,14 @@ function setCrumb(id){
   else c.innerHTML='<a onclick="nav(\'dash\')">이상 Lot</a> <span class="sep">›</span> <a onclick="nav(\'wafer\')">'+LOT+'</a> <span class="sep">›</span> W07 <span class="sep">›</span> <b style="color:var(--accent)">AI 원인분석</b>';
 }
 function pickLot(lot){LOT=lot;document.getElementById('wf-lot').textContent=lot;buildGal();nav('wafer');}
+// 사이드바 "이상 Lot" → 대시보드의 이상 Lot 목록으로 스크롤 + 강조
+function showLots(){
+  nav('dash');
+  var card=document.getElementById('lotlist');if(!card)return;
+  card.scrollIntoView({behavior:'smooth',block:'center'});
+  card.classList.remove('flash');void card.offsetWidth;card.classList.add('flash');
+  toast('⚠️ 이상 Lot 3건 — 행을 클릭하면 AI 분석으로 이동합니다');
+}
 function pickWafer(w){nav('analysis');runAnalysis();}
 function gotoAnalysis(){LOT='LOT2381';document.getElementById('wf-lot').textContent=LOT;buildGal();nav('analysis');runAnalysis();}
 // 사용자 공개 예시(3종)
@@ -695,10 +747,33 @@ function setDefaultEx(n){CFG.defaultEx=n;setEx(n);
   toast('기본 공개수준 → 예시'+n+' 적용');}
 function setConf(v){CFG.confThresh=+v;document.getElementById('confval').textContent=v+'%';}
 function saveCfg(){toast('✔ 설정 저장됨 — 모델·FDC·파이프라인·공개수준 반영');}
+// ===== 대시보드 웨이퍼맵 density hotspot (Edge-Ring 패턴) =====
+function buildHeat(){
+  var el=document.getElementById('heat');if(!el)return;
+  var N=12,C=(N-1)/2,R=C+0.35,cells='';
+  for(var y=0;y<N;y++)for(var x=0;x<N;x++){
+    var d=Math.hypot(x-C,y-C),col;
+    if(d>R){col='#f4f7fa';}                       // 웨이퍼 밖
+    else if(d>R-1.35){col='#c85c58';}             // 전둘레 링 = hotspot
+    else if(d>R-2.2){col='#e6c3c1';}              // 링 주변 중밀도
+    else {col='#eef1f5';}                          // 중앙 정상
+    cells+='<i style="background:'+col+'"></i>';
+  }
+  el.innerHTML=cells;
+}
+// ===== 조치 승인 (HITL) — operator approval → ledger 기록 =====
+function approve(a){
+  var names={iso:'격리+재교정 승인',wat:'감시만 승인',esc:'상위 에스컬레이션',rej:'조치 반려'};
+  var stt={iso:'APPROVED · HOLD+RECAL',wat:'APPROVED · WATCH',esc:'ESCALATED',rej:'REJECTED'};
+  toast('✅ '+names[a]+' — 불변 로그(ledger)에 기록됨');
+  var L=document.getElementById('ledger');if(!L)return;
+  L._n=(L._n||0)+1;
+  L.innerHTML+='<br><span class="cmt"># operator decision '+L._n+'</span> <span class="ky">rca.approve</span>(action=<span class="st">"'+a+'"</span>, by=<span class="st">"KT"</span>) → <span class="st">'+stt[a]+'</span>';
+}
 function initSettings(){
   document.querySelectorAll('#exdefault button').forEach(function(b){b.classList.toggle('off',b.getAttribute('data-e')!=CFG.defaultEx)});
   renderFDC();
 }
 // 초기화
-buildGal();buildKG();initSettings();setEx(2);setCrumb('dash');
+buildGal();buildKG();buildHeat();initSettings();setEx(2);setCrumb('dash');
 </script>
